@@ -24,7 +24,7 @@ function App() {
 
   const handleKakaoLogin = () => {
     const KAKAO_CLIENT_ID = '810bb035b44a77dbc46896dccb59432b';
-    const KAKAO_REDIRECT_URI = 'https://us-central1-project-1-ebbf0.cloudfunctions.net/api/auth/kakao/callback';
+    const KAKAO_REDIRECT_URI = 'https://proto-backend.yohan1067.workers.dev/api/auth/kakao/callback';
     const kakaoAuthURL = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}`;
     window.location.href = kakaoAuthURL;
   };
@@ -50,7 +50,7 @@ function App() {
           </div>
         ) : (
           <div>
-            <h1 className="text-2xl font-bold mb-6">카카오 로그인</h1>
+            <h1 className="text-2xl font-bold mb-6">카카오 로그인 (CF 버전)</h1>
             <button
               onClick={handleKakaoLogin}
               className="bg-[#FEE500] text-[#3C1E1E] font-bold py-2 px-4 rounded-md hover:opacity-90 transition-opacity"
@@ -59,6 +59,9 @@ function App() {
             </button>
           </div>
         )}
+        <div className="mt-8 text-xs text-gray-400">
+          Last Updated: 2026-01-28 16:20 (KST)
+        </div>
       </div>
     </div>
   );
