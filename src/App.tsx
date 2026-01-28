@@ -24,7 +24,7 @@ function App() {
 
   const handleKakaoLogin = () => {
     const KAKAO_CLIENT_ID = '810bb035b44a77dbc46896dccb59432b';
-    const KAKAO_REDIRECT_URI = 'http://localhost:3000/api/auth/kakao/callback';
+    const KAKAO_REDIRECT_URI = 'https://us-central1-project-1-ebbf0.cloudfunctions.net/api/auth/kakao/callback';
     const kakaoAuthURL = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}`;
     window.location.href = kakaoAuthURL;
   };

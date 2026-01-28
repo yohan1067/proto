@@ -13,3 +13,4 @@ CREATE UNIQUE INDEX "User_kakaoId_key" ON "User"("kakaoId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+

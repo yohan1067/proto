@@ -1,0 +1,8 @@
+name = "proto-backend"
+main = "server/index.ts"
+compatibility_date = "2024-01-28"
+
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "proto"
+database_id = "db9514c1-ae6c-46df-998e-68462b11a397"
