@@ -279,7 +279,7 @@ function App() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-light dark:bg-background-dark text-white font-display">
+    <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-dark text-white font-display">
       <div className="absolute top-4 left-4 z-50">
         <button 
           onClick={toggleLanguage}
@@ -303,12 +303,12 @@ function App() {
                   <h1 className="text-xl font-bold tracking-tight">AI Assistant</h1>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-white/40 hidden sm:block">{nickname}{t('welcome')}</span>
+                  <span className="text-xs text-white/60 hidden sm:block">{nickname}{t('welcome')}</span>
                   <button 
                     onClick={handleLogout}
-                    className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all group"
+                    className="w-10 h-10 rounded-full border border-white/20 overflow-hidden bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all group"
                   >
-                    <span className="material-symbols-outlined text-white/40 group-hover:text-red-400">logout</span>
+                    <span className="material-symbols-outlined text-white/70 group-hover:text-red-400">logout</span>
                   </button>
                 </div>
               </header>
@@ -330,7 +330,7 @@ function App() {
                             navigator.clipboard.writeText(msg.text);
                             alert(t('copied'));
                           }}
-                          className="absolute -bottom-10 right-0 bg-white/5 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/50 hover:text-white z-30"
+                          className="absolute -bottom-10 right-0 bg-white/10 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/70 hover:text-white z-30"
                         >
                           <span className="material-symbols-outlined text-sm">content_copy</span>
                           {t('copy')}
@@ -355,11 +355,11 @@ function App() {
               <div className="fixed bottom-24 left-0 right-0 p-4 z-50 pointer-events-auto">
                 <form 
                   onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
-                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full shadow-2xl bg-background-dark/50 backdrop-blur-xl"
+                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full shadow-2xl bg-[#161b2a] border border-white/10 backdrop-blur-2xl"
                 >
                   <input 
                     ref={inputRef}
-                    className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/30 py-2" 
+                    className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/40 py-2" 
                     placeholder={t('ask_placeholder')}
                     type="text"
                     autoComplete="off"
