@@ -1,3 +1,91 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #135bec;
+  --color-kakao-yellow: #FEE500;
+  --color-background-light: #f6f6f8;
+  --color-background-dark: #101622;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-display bg-background-light dark:bg-background-dark text-white antialiased;
+  }
+}
+
+.ai-orb-glow {
+    background: radial-gradient(circle, rgba(19, 91, 236, 0.4) 0%, rgba(16, 22, 34, 0) 70%);
+}
+.ai-orb-core {
+    background: radial-gradient(circle, #4f87ff 0%, #135bec 50%, #0a0e17 100%);
+}
+
+.glass-ai {
+    background: rgba(19, 91, 236, 0.05);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(19, 91, 236, 0.3);
+    box-shadow: 0 0 20px rgba(19, 91, 236, 0.1);
+}
+.glass-user {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.suggestion-chip {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(4px);
+}
+.input-container {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+}
+.gradient-blur {
+    background: radial-gradient(circle at top right, rgba(19, 91, 236, 0.15) 0%, transparent 60%);
+}
+
+.bg-gradient-mesh {
+    background: radial-gradient(circle at 0% 0%, rgba(19, 91, 236, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(79, 135, 255, 0.1) 0%, transparent 50%);
+}
+
+.chat-card-glow:hover {
+    box-shadow: 0 0 20px rgba(19, 91, 236, 0.15);
+    border-color: rgba(19, 91, 236, 0.3);
+}
+
+.card-dark {
+    background-color: #161b2a;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+.fill-1 {
+  font-variation-settings: 'FILL' 1;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}

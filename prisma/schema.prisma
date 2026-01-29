@@ -9,10 +9,21 @@ datasource db {
 }
 
 model User {
+  id           Int           @id @default(autoincrement())
+  kakaoId      BigInt        @unique
+  email        String?       @unique
+  nickname     String?
+  refreshToken String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  chats        ChatHistory[]
+}
+
+model ChatHistory {
   id        Int      @id @default(autoincrement())
-  kakaoId   BigInt   @unique
-  email     String?  @unique
-  nickname  String?
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  question  String
+  answer    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
