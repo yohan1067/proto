@@ -20,6 +20,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [nickname, setNickname] = useState<string | null>(localStorage.getItem('user_nickname'));
   const [question, setQuestion] = useState<string>('');
   const [systemPrompt, setSystemPrompt] = useState<string>('');
@@ -106,23 +107,40 @@ function App() {
   };
 
   const fetchUserProfile = async (token: string) => {
+    const profileController = new AbortController();
+    const profileTimeout = setTimeout(() => profileController.abort(), 10000);
+
     try {
+      console.log("Fetching user profile...");
       const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: profileController.signal
       });
+      
+      clearTimeout(profileTimeout);
       if (response.ok) {
         const userData = await response.json();
+        console.log("User profile fetched:", userData);
         setNickname(userData.nickname);
         localStorage.setItem('user_nickname', userData.nickname);
-        setIsAdmin(userData.isAdmin);
+        setIsAdmin(!!userData.isAdmin);
         setIsLoggedIn(true);
       } else {
+        console.error("Profile fetch failed:", response.status);
+        alert(`인증 실패 (Status: ${response.status}). 다시 로그인해주세요.`);
         handleLogout();
       }
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
+    } catch (error: any) {
+      clearTimeout(profileTimeout);
+      console.error('Profile fetch error:', error);
+      if (error.name === 'AbortError') {
+        alert("프로필 정보를 불러오는 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.");
+      } else {
+        alert(`오류 발생: ${error.message}`);
+      }
       handleLogout();
     } finally {
+      setIsInitialLoading(false);
       setIsLoggingIn(false);
     }
   };
@@ -214,6 +232,8 @@ function App() {
       const token = localStorage.getItem('access_token');
       if (token) {
         fetchUserProfile(token);
+      } else {
+        setIsInitialLoading(false);
       }
     }
   }, []);
@@ -232,6 +252,7 @@ function App() {
     localStorage.removeItem('user_nickname');
     setIsLoggedIn(false);
     setIsLoggingIn(false);
+    setIsInitialLoading(false);
     setNickname(null);
     setIsAdmin(false);
     setQuestion('');
@@ -245,6 +266,17 @@ function App() {
     item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark">
+        <div className="relative w-32 h-32 rounded-full ai-orb-core animate-pulse-slow flex items-center justify-center shadow-[0_0_40px_rgba(19,91,236,0.3)]">
+          <span className="material-symbols-outlined text-white animate-spin">progress_activity</span>
+        </div>
+        <p className="mt-8 text-white/40 text-sm tracking-widest uppercase animate-pulse">{t('loading_profile')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-light dark:bg-background-dark text-white font-display">

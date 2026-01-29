@@ -21,8 +21,9 @@ export default {
 
 		const corsHeaders = {
 			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+			'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE',
 			'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+			'Access-Control-Max-Age': '86400',
 		};
 
 		if (request.method === 'OPTIONS') {
@@ -234,8 +235,8 @@ export default {
 				const kakaoAccount = userData.kakao_account || {};
 				const nickname = kakaoAccount.profile?.nickname || 'KakaoUser_' + kakaoId.toString().substring(0, 4);
 
-				// 특정 사용자(사용자님)를 관리자로 설정
-				const isAdmin = nickname === 'Preview User' || kakaoId === 123456789; // 나중에 실제 닉네임/ID로 교체 가능
+				// "최요한" 님을 관리자로 설정
+				const isAdmin = nickname === '최요한';
 
 				const user = await prisma.user.upsert({
 					where: { kakaoId: BigInt(kakaoId) },
