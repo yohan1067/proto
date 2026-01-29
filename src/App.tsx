@@ -572,7 +572,7 @@ function App() {
               </header>
               <main className="flex-1 p-6 space-y-10 pb-32 overflow-y-auto no-scrollbar">
                 <section className="space-y-4">
-                  <h2 className="text-sm font-bold text-primary uppercase tracking-widest">System Prompt</h2>
+                  <h2 className="text-sm font-bold text-primary uppercase tracking-widest">{t('admin_system_prompt')}</h2>
                   <div className="space-y-2">
                     <textarea
                       className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:ring-2 focus:ring-primary outline-none transition-all resize-none"
@@ -590,7 +590,7 @@ function App() {
                 </section>
 
                 <section className="space-y-4">
-                  <h2 className="text-sm font-bold text-primary uppercase tracking-widest">User Management ({users.length})</h2>
+                  <h2 className="text-sm font-bold text-primary uppercase tracking-widest">{t('admin_user_management')} ({users.length})</h2>
                   <div className="space-y-3">
                     {users.map(u => (
                       <div key={u.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
