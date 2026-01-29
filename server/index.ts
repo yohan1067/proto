@@ -108,11 +108,12 @@ export default {
 					});
 				};
 
-				// 무료 모델 리스트 (OpenRouter 지원)
+				// 현재 OpenRouter에서 지원하는 확실한 무료 모델 리스트 (2026년 1월 기준)
 				const models = [
-					"google/gemini-2.0-flash-001",
-					"google/gemini-2.0-flash-lite-preview-02-05:free",
-					"mistralai/mistral-7b-instruct:free"
+					"google/gemini-2.0-flash-exp:free",
+					"google/gemma-3-27b-it:free",
+					"mistralai/mistral-small-2409:free",
+					"meta-llama/llama-3.3-70b-instruct:free"
 				];
 
 				let aiResponse: any;
