@@ -19,7 +19,6 @@ function App() {
   const { t, i18n } = useTranslation();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
-  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [nickname, setNickname] = useState<string | null>(localStorage.getItem('user_nickname'));
   const [question, setQuestion] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -66,7 +65,7 @@ function App() {
     const nextLng = i18n.language.startsWith('ko') ? 'en' : 'ko';
     i18n.changeLanguage(nextLng);
   };
-// ... (handleAskAi 및 기타 로직)
+
   const fetchUserProfile = async (token: string) => {
     try {
       const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/me', {
@@ -84,7 +83,6 @@ function App() {
       console.error('Failed to fetch user profile:', error);
       handleLogout();
     } finally {
-      setIsInitialLoading(false);
       setIsLoggingIn(false);
     }
   };
@@ -106,9 +104,8 @@ function App() {
     
     inputRef.current?.focus();
 
-    // 타임아웃 설정을 위한 AbortController
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 후 중단
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
       const token = localStorage.getItem('access_token');
@@ -177,8 +174,6 @@ function App() {
       const token = localStorage.getItem('access_token');
       if (token) {
         fetchUserProfile(token);
-      } else {
-        setIsInitialLoading(false);
       }
     }
   }, []);
@@ -197,13 +192,11 @@ function App() {
     localStorage.removeItem('user_nickname');
     setIsLoggedIn(false);
     setIsLoggingIn(false);
-    setIsInitialLoading(false);
     setNickname(null);
     setQuestion('');
     setMessages([]);
     setHistory([]);
     setActiveTab('chat');
-    // URL 파라미터 제거 및 홈으로 리다이렉트
     window.history.replaceState({}, document.title, "/");
   };
 
@@ -212,20 +205,8 @@ function App() {
     item.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isInitialLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark">
-        <div className="relative w-32 h-32 rounded-full ai-orb-core animate-pulse-slow flex items-center justify-center shadow-[0_0_40px_rgba(19,91,236,0.3)]">
-          <span className="material-symbols-outlined text-white animate-spin">progress_activity</span>
-        </div>
-        <p className="mt-8 text-white/40 text-sm tracking-widest uppercase animate-pulse">{t('loading_profile')}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-light dark:bg-background-dark text-white font-display">
-      {/* Global Language Toggle */}
       <div className="absolute top-4 left-4 z-50">
         <button 
           onClick={toggleLanguage}
@@ -266,29 +247,28 @@ function App() {
                       <p className="text-lg">{t('help_label')}</p>
                    </div>
                 )}
-                            {messages.map((msg) => (
-                              <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[85%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
-                                <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group`}>
-                                  {msg.text}
-                                  {msg.sender === 'ai' && (
-                                    <button 
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(msg.text);
-                                        alert(t('copied'));
-                                      }}
-                                      className="absolute -bottom-10 right-0 bg-white/5 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/50 hover:text-white"
-                                    >
-                                      <span className="material-symbols-outlined text-sm">content_copy</span>
-                                      {t('copy')}
-                                    </button>
-                                  )}
-                                </div>
-                                <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
-                                  {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
-                                </span>
-                              </div>
-                            ))}
-                
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[85%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
+                    <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group`}>
+                      {msg.text}
+                      {msg.sender === 'ai' && (
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(msg.text);
+                            alert(t('copied'));
+                          }}
+                          className="absolute -bottom-10 right-0 bg-white/5 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/50 hover:text-white"
+                        >
+                          <span className="material-symbols-outlined text-sm">content_copy</span>
+                          {t('copy')}
+                        </button>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
+                      {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
+                    </span>
+                  </div>
+                ))}
                 {isLoadingAi && (
                   <div className="flex flex-col items-start max-w-[85%] animate-pulse">
                     <div className="glass-ai rounded-2xl rounded-tl-none p-4 text-[15px]">
@@ -299,51 +279,27 @@ function App() {
                 <div ref={messagesEndRef} />
               </main>
 
-                        <div className="fixed bottom-24 left-0 right-0 p-4 space-y-4 z-20">
-
-                          <form 
-
-                            onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
-
-                            className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full"
-
-                          >
-
-              
-                
-                              <input 
-                
-                                ref={inputRef}
-                
-                                className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/30 py-2" 
-                
-                                placeholder={t('ask_placeholder')}
-                
-                                type="text"
-                
-                                value={question}
-                
-                                onChange={(e) => setQuestion(e.target.value)}
-                
-                              />
-                
-                              <button 
-                
-                                type="submit"
-                
-                                disabled={isLoadingAi}
-                
-                                className="w-10 h-10 flex-shrink-0 rounded-xl bg-primary flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
-                
-                              >
-                
-                                <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
-                
-                              </button>
-                
-                            </form>
-                
-                
+              <div className="fixed bottom-24 left-0 right-0 p-4 space-y-4 z-20">
+                <form 
+                  onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
+                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full"
+                >
+                  <input 
+                    ref={inputRef}
+                    className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/30 py-2" 
+                    placeholder={t('ask_placeholder')}
+                    type="text"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                  />
+                  <button 
+                    type="submit"
+                    disabled={isLoadingAi}
+                    className="w-10 h-10 flex-shrink-0 rounded-xl bg-primary flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
+                  </button>
+                </form>
               </div>
             </>
           ) : (
@@ -411,7 +367,6 @@ function App() {
             </>
           )}
 
-          {/* Bottom Navigation */}
           <nav className="fixed bottom-0 left-0 right-0 bg-background-dark/90 backdrop-blur-xl border-t border-white/5 px-8 pb-8 pt-4 z-30">
             <div className="flex justify-between items-center max-w-md mx-auto">
               <button 
@@ -450,12 +405,9 @@ function App() {
         </div>
       ) : (
         <div className="relative flex-1 flex flex-col justify-between overflow-hidden">
-          {/* Top Decorative */}
           <div className="flex items-center bg-transparent p-4 justify-end z-10 mt-4">
-            {/* Icons removed */}
           </div>
 
-          {/* Hero Section */}
           <div className="relative flex-1 flex flex-col items-center justify-center px-4">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] ai-orb-glow opacity-60 animate-pulse-slow"></div>
             
@@ -477,7 +429,6 @@ function App() {
             </div>
           </div>
 
-          {/* Action Section */}
           <div className="pb-12 px-6 flex flex-col gap-4 z-10 max-w-md mx-auto w-full">
             <button 
               onClick={handleKakaoLogin}
@@ -524,7 +475,6 @@ function App() {
             </p>
           </div>
 
-          {/* Bottom Gradient */}
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background-dark to-transparent pointer-events-none"></div>
         </div>
       )}
