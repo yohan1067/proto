@@ -200,11 +200,10 @@ export default {
 					data: { refreshToken }
 				});
 
-				// 인증 성공 후 프론트엔드로 리다이렉트 (임시 토큰 포함, 캐시 방지 파라미터 추가)
-				const frontendUrl = 'https://proto-frontend-at2.pages.dev';
-				const redirectUrl = `${frontendUrl}/?access_token=${accessToken}&refresh_token=${refreshToken}&v=20260129`;
-				return Response.redirect(redirectUrl, 302);
-
+				                // 인증 성공 후 프론트엔드로 리다이렉트 (임시 토큰 포함, 캐시 방지 파라미터 추가)
+				                const frontendUrl = 'https://proto-9ff.pages.dev';
+				                const redirectUrl = `${frontendUrl}/?access_token=${accessToken}&refresh_token=${refreshToken}&v=FINAL`;
+				                return Response.redirect(redirectUrl, 302);
 			} catch (error: any) {
 				return new Response(error.message, { status: 500, headers: corsHeaders });
 			}

@@ -8,6 +8,8 @@ binding = "DB"
 database_name = "proto"
 database_id = "db9514c1-ae6c-46df-998e-68462b11a397"
 
+pages_build_output_dir = "dist"
+
 [vars]
 KAKAO_CLIENT_ID = "810bb035b44a77dbc46896dccb59432b"
 KAKAO_CLIENT_SECRET = "fy3Ib2tLt5JWbsLb3sOQHry4wxiXFU8U"

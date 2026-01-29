@@ -24,7 +24,7 @@ React + TypeScript + Vite 기반의 현대적인 AI 채팅 애플리케이션입
 - **Authentication**: 카카오 계정을 통한 간편 로그인 및 토큰 기반 인증 유지.
 
 ## Deployment Information
-- **Frontend URL**: https://proto-frontend-at2.pages.dev
+- **Frontend URL**: https://proto-9ff.pages.dev
 - **Backend URL**: https://proto-backend.yohan1067.workers.dev
 
 ## Current Status & Next Steps
