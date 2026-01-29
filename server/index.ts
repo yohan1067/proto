@@ -181,10 +181,12 @@ export default {
 					});
 				};
 
+				// 2026년 1월 기준 무료 할당량이 가장 높은 2.5-flash-lite를 최상단에 배치
 				const modelsToTry = [
-					'gemini-2.0-flash',
+					'gemini-2.5-flash-lite',
 					'gemini-2.5-flash',
-					'gemini-2.0-flash-lite'
+					'gemini-2.0-flash',
+					'gemini-3-flash-preview'
 				];
 				let lastError = "";
 				let aiResponse: any;
