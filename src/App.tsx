@@ -54,13 +54,17 @@ function App() {
 
   const fetchChatHistory = async () => {
     try {
+      console.log("Fetching chat history...");
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/history', {
+      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/history?t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
       if (response.ok) {
         const data = await response.json();
-        setHistory(data);
+        console.log("Chat history fetched:", data);
+        // D1 results가 배열인지 확인 후 설정
+        setHistory(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       console.error('Failed to fetch history:', error);
