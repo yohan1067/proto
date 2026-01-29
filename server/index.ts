@@ -208,6 +208,11 @@ export default {
 				`).bind(kakaoId, nickname, email, nickname === '최요한' ? 1 : 0).run();
 
 				const user: any = await env.DB.prepare("SELECT id FROM User WHERE kakaoId = ?").bind(kakaoId).first();
+				
+				// 로그인 히스토리 기록 (접속 지역 정보 포함)
+				const region = (request as any).cf?.region || (request as any).cf?.country || 'Unknown';
+				await env.DB.prepare("INSERT INTO LoginHistory (userId, region) VALUES (?, ?)").bind(user.id, region).run();
+
 				const { accessToken, refreshToken } = generateTokens(user.id);
 				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
 

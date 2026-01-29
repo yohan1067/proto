@@ -29,6 +29,14 @@ model ChatHistory {
   createdAt DateTime @default(now())
 }
 
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  region    String?
+  createdAt DateTime @default(now())
+}
+
 model SystemConfig {
   id    Int    @id @default(1)
   key   String @unique
