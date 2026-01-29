@@ -249,26 +249,17 @@ function App() {
                 <div ref={messagesEndRef} />
               </main>
 
-              <div className="fixed bottom-24 left-0 right-0 p-4 space-y-4 z-20">
-                <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 max-w-2xl mx-auto">
-                  {[t('suggestion_poem'), t('suggestion_coding'), t('suggestion_summarize')].map((s, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => handleAskAi(s)}
-                      className="suggestion-chip px-4 py-2 rounded-full whitespace-nowrap text-sm text-white/70 hover:text-white transition-colors"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                
-                            <form 
-                
-                              onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
-                
-                              className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full"
-                
-                            >
+                        <div className="fixed bottom-24 left-0 right-0 p-4 space-y-4 z-20">
+
+                          <form 
+
+                            onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
+
+                            className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full"
+
+                          >
+
+              
                 
                               <input 
                 
