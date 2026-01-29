@@ -11,7 +11,7 @@ export interface Env {
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
-let prisma: any; // Prisma 제거 후 직접 쿼리 사용 중
+let prisma: any; 
 
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
@@ -156,16 +156,12 @@ export default {
 					})
 				});
 
-				                const aiData: any = await aiResponse.json();
-				                console.log("Gemini Raw Response:", JSON.stringify(aiData));
-				
-				                if (!aiResponse.ok) {
-				                    const colo = (request as any).cf?.colo || 'Unknown';
-				                    return jsonResponse({ 
-				                        error: `Gemini API Error (Region: ${colo})`, 
-				                        message: aiData.error?.message || "Location not supported or other API error"
-				                    }, aiResponse.status);
-				                }
+				const aiData: any = await aiResponse.json();
+				if (!aiResponse.ok) {
+					const colo = (request as any).cf?.colo || 'Unknown';
+					return jsonResponse({ error: `Gemini API Error (${colo}): ${aiData.error?.message}` }, aiResponse.status);
+				}
+
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 				if (answer) {
 					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
@@ -182,7 +178,7 @@ export default {
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 
-				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").all();
+				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").bind(decoded.userId).all();
 				return jsonResponse(results);
 			}
 
@@ -193,7 +189,6 @@ export default {
 
 				const REDIRECT_URI = 'https://proto-backend.yohan1067.workers.dev/api/auth/kakao/callback';
 
-				// 토큰 요청 (주소 및 방식 수정)
 				const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
@@ -218,20 +213,27 @@ export default {
 				const nickname = userData.kakao_account?.profile?.nickname || 'User';
 				const email = userData.kakao_account?.email || null;
 
+				// SQL 파라미터 개수 명시적 일치 (6개 ? -> 6개 bind)
+				const now = new Date().toISOString();
 				await env.DB.prepare(`
 					INSERT INTO User (kakaoId, nickname, email, isAdmin, createdAt, updatedAt) 
-					VALUES (?, ?, ?, ?, DATETIME('now'), DATETIME('now'))
+					VALUES (?, ?, ?, ?, ?, ?)
 					ON CONFLICT(kakaoId) DO UPDATE SET 
 						nickname = excluded.nickname, 
 						email = excluded.email,
-						updatedAt = DATETIME('now')
-				`).bind(kakaoId, nickname, email, nickname === '최요한' ? 1 : 0).run();
+						updatedAt = excluded.updatedAt
+				`).bind(kakaoId, nickname, email, nickname === '최요한' ? 1 : 0, now, now).run();
 
 				const user: any = await env.DB.prepare("SELECT id FROM User WHERE kakaoId = ?").bind(kakaoId).first();
+				
+				// 로그인 히스토리 기록
+				const region = (request as any).cf?.region || (request as any).cf?.country || 'Unknown';
+				await env.DB.prepare("INSERT INTO LoginHistory (userId, region) VALUES (?, ?)").bind(user.id, region).run();
+
 				const { accessToken, refreshToken } = generateTokens(user.id);
 				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
 
-				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=FINAL_FIX`;
+				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_FINAL`;
 				return Response.redirect(redirectUrl, 302);
 			}
 
