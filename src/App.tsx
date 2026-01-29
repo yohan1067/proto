@@ -246,7 +246,7 @@ function App() {
     inputRef.current?.focus();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60초로 연장
 
     try {
       const token = localStorage.getItem('access_token');

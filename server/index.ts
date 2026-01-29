@@ -108,12 +108,12 @@ export default {
 					});
 				};
 
-				// 현재 OpenRouter에서 지원하는 확실한 무료 모델 리스트 (2026년 1월 기준)
+				// 속도가 가장 빠른 모델 위주로 재편
 				const models = [
 					"google/gemini-2.0-flash-exp:free",
+					"meta-llama/llama-3.3-70b-instruct:free",
 					"google/gemma-3-27b-it:free",
-					"mistralai/mistral-small-2409:free",
-					"meta-llama/llama-3.3-70b-instruct:free"
+					"mistralai/mistral-small-2409:free"
 				];
 
 				let aiResponse: any;
@@ -121,10 +121,35 @@ export default {
 				let lastError = "";
 
 				for (const model of models) {
-					aiResponse = await callOpenRouter(model);
-					aiData = await aiResponse.json();
-					if (aiResponse.ok) break;
-					lastError = aiData.error?.message || "OpenRouter API Error";
+					try {
+						// 각 모델당 최대 15초씩만 기다림
+						const controller = new AbortController();
+						const timeout = setTimeout(() => controller.abort(), 15000);
+						
+						aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+							method: "POST",
+							headers: {
+								"Authorization": `Bearer ${OPENROUTER_KEY}`,
+								"Content-Type": "application/json"
+							},
+							body: JSON.stringify({
+								"model": model,
+								"messages": [
+									{"role": "system", "content": systemPrompt},
+									{"role": "user", "content": prompt}
+								]
+							}),
+							signal: controller.signal
+						});
+						
+						clearTimeout(timeout);
+						aiData = await aiResponse.json();
+						if (aiResponse.ok) break;
+						lastError = aiData.error?.message || "Model failed";
+					} catch (e) {
+						console.error(`Model ${model} timed out or failed`);
+						continue;
+					}
 				}
 
 				if (!aiResponse.ok) return jsonResponse({ error: lastError }, aiResponse.status);
