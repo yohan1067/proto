@@ -403,11 +403,11 @@ function App() {
               <div className="fixed bottom-24 left-0 right-0 p-4 z-50 pointer-events-auto">
                 <form 
                   onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
-                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full shadow-2xl bg-[#161b2a] border border-white/10 backdrop-blur-2xl"
+                  className="input-container flex items-center gap-3 p-2 pl-2 rounded-2xl max-w-2xl mx-auto w-full shadow-2xl bg-[#161b2a] border border-white/10 backdrop-blur-2xl"
                 >
                   <input 
                     ref={inputRef}
-                    className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/40 py-2" 
+                    className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/40 py-2 px-4" 
                     placeholder={t('ask_placeholder')}
                     type="text"
                     autoComplete="off"
