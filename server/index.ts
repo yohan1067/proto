@@ -183,35 +183,115 @@ export default {
 				
 				                												
 				
-				                																				// 모델 리스트 재정비 (안정적인 모델명 사용)
+				                																								// 더 다양한 모델 리스트와 정확한 재시도 로직
 				
 				                												
 				
-				                																				const modelsToTry = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash'];
+				                																								const modelsToTry = [
 				
 				                												
 				
-				                																
+				                																									'gemini-2.0-flash',
 				
-				                				
+				                												
 				
-				                
-								let lastError = "";
-								let aiResponse: any;
-								let aiData: any;
+				                																									'gemini-2.0-flash-lite-preview-02-05',
 				
-								for (const model of modelsToTry) {
-									aiResponse = await callGemini(model);
-									aiData = await aiResponse.json();
-									
-									if (aiResponse.ok) break;
-									
-														lastError = aiData.error?.message || "Unknown error";
-														console.error(`Model ${model} failed: ${lastError}`);
-														
-														// 리전 에러, 쿼터 에러, 또는 모델 과부하(overloaded)일 경우 재시도
-														if (!lastError.includes("location") && !lastError.includes("quota") && !lastError.includes("overloaded")) break;
-													}
+				                												
+				
+				                																									'gemini-2.0-pro-exp-02-05',
+				
+				                												
+				
+				                																									'gemini-2.5-flash'
+				
+				                												
+				
+				                																								];
+				
+				                												
+				
+				                																								let lastError = "";
+				
+				                												
+				
+				                																								let aiResponse: any;
+				
+				                												
+				
+				                																								let aiData: any;
+				
+				                												
+				
+				                																				
+				
+				                												
+				
+				                																								for (const model of modelsToTry) {
+				
+				                												
+				
+				                																									aiResponse = await callGemini(model);
+				
+				                												
+				
+				                																									aiData = await aiResponse.json();
+				
+				                												
+				
+				                																									
+				
+				                												
+				
+				                																									if (aiResponse.ok) break;
+				
+				                												
+				
+				                																									
+				
+				                												
+				
+				                																									lastError = aiData.error?.message || "Unknown error";
+				
+				                												
+				
+				                																									console.error(`Model ${model} failed: ${lastError}`);
+				
+				                												
+				
+				                																									
+				
+				                												
+				
+				                																									// 리전, 쿼터, 과부하 에러 시 다음 모델 시도
+				
+				                												
+				
+				                																									const isRetryable = lastError.toLowerCase().includes("location") || 
+				
+				                												
+				
+				                																									                    lastError.toLowerCase().includes("quota") || 
+				
+				                												
+				
+				                																									                    lastError.toLowerCase().includes("overloaded");
+				
+				                												
+				
+				                																									
+				
+				                												
+				
+				                																									if (!isRetryable) break;
+				
+				                												
+				
+				                																								}
+				
+				                												
+				
+				                																				
 																	if (!aiResponse.ok) {
 									const colo = (request as any).cf?.colo || 'Unknown';
 									let friendlyMessage = "AI 응답을 가져오지 못했습니다.";
