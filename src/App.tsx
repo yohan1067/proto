@@ -15,6 +15,14 @@ interface ChatHistoryItem {
   createdAt: string;
 }
 
+interface UserItem {
+  id: number;
+  nickname: string;
+  email: string | null;
+  isAdmin: boolean;
+  createdAt: string;
+}
+
 function App() {
   const { t, i18n } = useTranslation();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -26,6 +34,7 @@ function App() {
   const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
+  const [users, setUsers] = useState<UserItem[]>([]);
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'history' | 'admin'>('chat');
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +82,21 @@ function App() {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/admin/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  };
+
   const handleSavePrompt = async () => {
     try {
       const token = localStorage.getItem('access_token');
@@ -92,12 +116,28 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    if (isLoggedIn && activeTab === 'history') {
-      fetchChatHistory();
+  const handleWithdraw = async () => {
+    if (!window.confirm("정말로 탈퇴하시겠습니까? 모든 대화 기록이 삭제됩니다.")) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/withdraw', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        alert("탈퇴 처리가 완료되었습니다.");
+        handleLogout();
+      }
+    } catch (error) {
+      alert("탈퇴 처리 중 오류가 발생했습니다.");
     }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && activeTab === 'history') fetchChatHistory();
     if (isLoggedIn && activeTab === 'admin') {
       fetchSystemPrompt();
+      fetchUsers();
     }
   }, [isLoggedIn, activeTab]);
 
@@ -111,7 +151,6 @@ function App() {
     const profileTimeout = setTimeout(() => profileController.abort(), 20000);
 
     try {
-      console.log("Fetching user profile...");
       const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/me', {
         headers: { 'Authorization': `Bearer ${token}` },
         signal: profileController.signal
@@ -120,24 +159,15 @@ function App() {
       clearTimeout(profileTimeout);
       if (response.ok) {
         const userData = await response.json();
-        console.log("User profile fetched:", userData);
         setNickname(userData.nickname);
         localStorage.setItem('user_nickname', userData.nickname);
         setIsAdmin(!!userData.isAdmin);
         setIsLoggedIn(true);
       } else {
-        console.error("Profile fetch failed:", response.status);
-        alert(`인증 실패 (Status: ${response.status}). 다시 로그인해주세요.`);
         handleLogout();
       }
     } catch (error: any) {
       clearTimeout(profileTimeout);
-      console.error('Profile fetch error:', error);
-      if (error.name === 'AbortError') {
-        alert("프로필 정보를 불러오는 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.");
-      } else {
-        alert(`오류 발생: ${error.message}`);
-      }
       handleLogout();
     } finally {
       setIsInitialLoading(false);
@@ -444,22 +474,50 @@ function App() {
               <header className="pt-14 pb-4 px-6 sticky top-0 bg-background-dark/80 backdrop-blur-md z-20">
                 <h1 className="text-2xl font-bold tracking-tight">{t('admin_title')}</h1>
               </header>
-              <main className="flex-1 p-6 space-y-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white/50">{t('system_prompt_label')}</label>
-                  <textarea
-                    className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:ring-2 focus:ring-primary outline-none transition-all resize-none"
-                    rows={10}
-                    value={systemPrompt}
-                    onChange={(e) => setSystemPrompt(e.target.value)}
-                  />
-                  <button
-                    onClick={handleSavePrompt}
-                    className="w-full h-14 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg"
-                  >
-                    {t('save_prompt')}
-                  </button>
-                </div>
+              <main className="flex-1 p-6 space-y-10 pb-32 overflow-y-auto no-scrollbar">
+                <section className="space-y-4">
+                  <h2 className="text-sm font-bold text-primary uppercase tracking-widest">System Prompt</h2>
+                  <div className="space-y-2">
+                    <textarea
+                      className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:ring-2 focus:ring-primary outline-none transition-all resize-none"
+                      rows={6}
+                      value={systemPrompt}
+                      onChange={(e) => setSystemPrompt(e.target.value)}
+                    />
+                    <button
+                      onClick={handleSavePrompt}
+                      className="w-full h-12 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all"
+                    >
+                      {t('save_prompt')}
+                    </button>
+                  </div>
+                </section>
+
+                <section className="space-y-4">
+                  <h2 className="text-sm font-bold text-primary uppercase tracking-widest">User Management ({users.length})</h2>
+                  <div className="space-y-3">
+                    {users.map(u => (
+                      <div key={u.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-white">{u.nickname} {u.isAdmin && <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2">ADMIN</span>}</p>
+                          <p className="text-xs text-white/40">{u.email || 'No email'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-white/20">{new Date(u.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="pt-6 border-t border-white/5">
+                   <button 
+                    onClick={handleWithdraw}
+                    className="w-full h-12 border border-red-500/30 text-red-500/50 hover:bg-red-500 hover:text-white rounded-xl transition-all text-xs font-bold"
+                   >
+                     DANGER ZONE: WITHDRAW ACCOUNT
+                   </button>
+                </section>
               </main>
             </>
           )}

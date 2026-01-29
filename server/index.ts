@@ -66,15 +66,61 @@ export default {
 				}
 				const token = authHeader.split(' ')[1];
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				
-				const user = await env.DB.prepare("SELECT id, nickname, email, isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
+
+				const userPromise = env.DB.prepare("SELECT id, nickname, email, isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
+				const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Database timeout")), 15000));
+				const user = await Promise.race([userPromise, timeoutPromise]) as any;
 				
 				if (!user) return new Response('User not found', { status: 404, headers: corsHeaders });
 				return new Response(JSON.stringify(user), {
 					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 				});
+			} catch (e: any) {
+				return new Response(JSON.stringify({ error: e.message }), { 
+					status: e.message === "Database timeout" ? 504 : 401, 
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+				});
+			}
+		}
+
+		// 2-2. 회원 탈퇴 API
+		if (url.pathname === '/api/user/withdraw' && request.method === 'DELETE') {
+			try {
+				const authHeader = request.headers.get('Authorization');
+				const token = authHeader?.split(' ')[1];
+				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				const decoded = jwt.verify(token, jwtSecret) as any;
+				const userId = decoded.userId;
+
+				await env.DB.prepare("DELETE FROM ChatHistory WHERE userId = ?").bind(userId).run();
+				await env.DB.prepare("DELETE FROM LoginHistory WHERE userId = ?").bind(userId).run();
+				await env.DB.prepare("DELETE FROM User WHERE id = ?").bind(userId).run();
+
+				return new Response(JSON.stringify({ success: true }), {
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				});
 			} catch (e) {
-				return new Response('Invalid token', { status: 401, headers: corsHeaders });
+				return new Response('Withdrawal failed', { status: 500, headers: corsHeaders });
+			}
+		}
+
+		// 2-3. [관리자] 회원 목록 조회 API
+		if (url.pathname === '/api/admin/users' && request.method === 'GET') {
+			try {
+				const authHeader = request.headers.get('Authorization');
+				const token = authHeader?.split(' ')[1];
+				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				const decoded = jwt.verify(token, jwtSecret) as any;
+				
+				const adminCheck = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
+				if (!adminCheck || !adminCheck.isAdmin) return new Response('Forbidden', { status: 403, headers: corsHeaders });
+
+				const { results } = await env.DB.prepare("SELECT id, kakaoId, nickname, email, isAdmin, createdAt FROM User ORDER BY createdAt DESC").all();
+				return new Response(JSON.stringify(results), {
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				});
+			} catch (e) {
+				return new Response('Error', { status: 500, headers: corsHeaders });
 			}
 		}
 
@@ -157,7 +203,7 @@ export default {
 				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
 				const decoded = jwt.verify(token, jwtSecret) as any;
 
-				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").bind(decoded.userId).all();
+				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").all();
 				return new Response(JSON.stringify(results), {
 					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 				});
@@ -175,7 +221,7 @@ export default {
 				const KAKAO_ID = env.KAKAO_CLIENT_ID;
 				const REDIRECT_URI = 'https://proto-backend.yohan1067.workers.dev/api/auth/kakao/callback';
 
-				const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
+				const tokenResponse = await fetch('https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
 					body: new URLSearchParams({
@@ -197,7 +243,6 @@ export default {
 				const nickname = userData.kakao_account?.profile?.nickname || 'User';
 				const email = userData.kakao_account?.email || null;
 
-				// 직접 SQL로 Upsert 구현
 				await env.DB.prepare(`
 					INSERT INTO User (kakaoId, nickname, email, isAdmin, updatedAt) 
 					VALUES (?, ?, ?, ?, DATETIME('now'))
@@ -208,15 +253,10 @@ export default {
 				`).bind(kakaoId, nickname, email, nickname === '최요한' ? 1 : 0).run();
 
 				const user: any = await env.DB.prepare("SELECT id FROM User WHERE kakaoId = ?").bind(kakaoId).first();
-				
-				// 로그인 히스토리 기록 (접속 지역 정보 포함)
-				const region = (request as any).cf?.region || (request as any).cf?.country || 'Unknown';
-				await env.DB.prepare("INSERT INTO LoginHistory (userId, region) VALUES (?, ?)").bind(user.id, region).run();
-
 				const { accessToken, refreshToken } = generateTokens(user.id);
 				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
 
-				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_VER`;
+				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_VER_2`;
 				return Response.redirect(redirectUrl, 302);
 			} catch (error: any) {
 				return new Response(error.message, { status: 500, headers: corsHeaders });
