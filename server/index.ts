@@ -103,8 +103,8 @@ export default {
 				                const aiController = new AbortController();
 				                const aiTimeout = setTimeout(() => aiController.abort(), 25000);
 
-				                // Google Gemini API 호출 (안정적인 2.0-flash 모델로 변경 테스트)
-				                const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+				                // Google Gemini API 호출 (가장 안정적인 1.5-flash 모델로 변경)
+				                const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
 				                    method: 'POST',
 				                    headers: { 'Content-Type': 'application/json' },
 				                    body: JSON.stringify({
