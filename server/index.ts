@@ -11,6 +11,8 @@ export interface Env {
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
+let prisma: any; // Prisma 제거 후 직접 쿼리 사용 중
+
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
@@ -27,7 +29,6 @@ export default {
 			return new Response(null, { headers: corsHeaders });
 		}
 
-		// 헬퍼: 항상 JSON 응답 반환
 		const jsonResponse = (data: any, status = 200) => {
 			return new Response(JSON.stringify(data), {
 				status,
@@ -42,7 +43,6 @@ export default {
 		};
 
 		try {
-			// 0. 상태 점검용
 			if (url.pathname === '/api/health') {
 				return jsonResponse({ status: 'ok', time: new Date().toISOString() });
 			}
@@ -82,7 +82,7 @@ export default {
 				return jsonResponse(user);
 			}
 
-			// 2-2. 회원 탈퇴 API
+			// 2-2. 회원 탈퇴
 			if (url.pathname === '/api/user/withdraw' && request.method === 'DELETE') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
@@ -97,34 +97,32 @@ export default {
 				return jsonResponse({ success: true });
 			}
 
-			// 2-3. [관리자] 회원 목록 조회 API
+			// 2-3. 회원 목록
 			if (url.pathname === '/api/admin/users' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				
-				const adminCheck = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
+				const adminCheck: any = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
 				if (!adminCheck || !adminCheck.isAdmin) return jsonResponse({ error: 'Forbidden' }, 403);
 
 				const { results } = await env.DB.prepare("SELECT id, kakaoId, nickname, email, isAdmin, createdAt FROM User ORDER BY createdAt DESC").all();
 				return jsonResponse(results);
 			}
 
-			// 2-1. 관리자 프롬프트 관리
+			// 2-1. 관리자 프롬프트
 			if (url.pathname === '/api/admin/prompt') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				const user = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
+				const user: any = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
 				
-				if (!user || !user.isAdmin) {
-					return jsonResponse({ error: 'Forbidden' }, 403);
-				}
+				if (!user || !user.isAdmin) return jsonResponse({ error: 'Forbidden' }, 403);
 
 				if (request.method === 'GET') {
-					const config = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
+					const config: any = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
 					return jsonResponse({ prompt: config?.value || '너는 한국어로 코드 전문가야' });
 				}
 
@@ -144,7 +142,7 @@ export default {
 				const userId = decoded.userId;
 				const { prompt } = await request.json() as any;
 
-				const config = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
+				const config: any = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
 				const systemPrompt = config?.value || '너는 한국어로 코드 전문가야';
 
 				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
@@ -159,13 +157,9 @@ export default {
 				});
 
 				const aiData: any = await aiResponse.json();
-				
-				if (!aiResponse.ok) {
-					return jsonResponse({ error: aiData.error?.message || "Gemini API Error" }, aiResponse.status);
-				}
+				if (!aiResponse.ok) return jsonResponse({ error: aiData.error?.message || "Gemini API Error" }, aiResponse.status);
 
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
-
 				if (answer) {
 					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
 					return jsonResponse({ answer });
@@ -174,7 +168,7 @@ export default {
 				}
 			}
 
-			// 4. 대화 기록 조회
+			// 4. 대화 기록
 			if (url.pathname === '/api/history' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
@@ -190,15 +184,15 @@ export default {
 				const code = url.searchParams.get('code');
 				if (!code) return new Response('Code missing', { status: 400, headers: corsHeaders });
 
-				const KAKAO_ID = env.KAKAO_CLIENT_ID;
 				const REDIRECT_URI = 'https://proto-backend.yohan1067.workers.dev/api/auth/kakao/callback';
 
-				const tokenResponse = await fetch('https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_ID}&redirect_uri=${REDIRECT_URI}', {
+				// 토큰 요청 (주소 및 방식 수정)
+				const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
 					body: new URLSearchParams({
 						grant_type: 'authorization_code',
-						client_id: KAKAO_ID,
+						client_id: env.KAKAO_CLIENT_ID,
 						client_secret: env.KAKAO_CLIENT_SECRET,
 						redirect_uri: REDIRECT_URI,
 						code,
@@ -206,6 +200,8 @@ export default {
 				});
 
 				const tokenData: any = await tokenResponse.json();
+				if (!tokenResponse.ok) return jsonResponse(tokenData, 401);
+
 				const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
 					headers: { Authorization: `Bearer ${tokenData.access_token}` },
 				});
@@ -228,7 +224,7 @@ export default {
 				const { accessToken, refreshToken } = generateTokens(user.id);
 				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
 
-				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=FINAL_SQL`;
+				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=FINAL_FIX`;
 				return Response.redirect(redirectUrl, 302);
 			}
 
