@@ -10,6 +10,7 @@ interface Message {
 
 interface ChatHistoryItem {
   id: number;
+  userId: number;
   question: string;
   answer: string;
   createdAt: string;
@@ -30,6 +31,18 @@ function App() {
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [modalConfig, setModalConfig] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+    onConfirm?: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
   const [nickname, setNickname] = useState<string | null>(localStorage.getItem('user_nickname'));
   const [question, setQuestion] = useState<string>('');
   const [systemPrompt, setSystemPrompt] = useState<string>('');
@@ -38,12 +51,16 @@ function App() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
   const [isUpdatingNickname, setIsUpdatingNickname] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'chat' | 'history' | 'admin' | 'profile'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'history' | 'profile' | 'admin'>('chat');
   const [searchQuery, setSearchQuery] = useState('');
   const [newNickname, setNewNickname] = useState<string>('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info', onConfirm?: () => void) => {
+    setModalConfig({ show: true, title, message, type, onConfirm });
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -73,7 +90,7 @@ function App() {
   const fetchSystemPrompt = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/admin/prompt', {
+      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/admin/prompt?t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -88,7 +105,7 @@ function App() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/admin/users', {
+      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/admin/users?t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -103,7 +120,7 @@ function App() {
   const handleSavePrompt = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/admin/prompt', {
+      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/admin/prompt?t=${Date.now()}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -112,22 +129,22 @@ function App() {
         body: JSON.stringify({ prompt: systemPrompt })
       });
       if (response.ok) {
-        alert(t('prompt_saved'));
+        showAlert(t('admin_title'), t('prompt_saved'), 'success');
       }
     } catch (error) {
-      alert('Save failed');
+      showAlert("Error", "Save failed", 'error');
     }
   };
 
   const handleUpdateNickname = async () => {
     if (!newNickname.trim() || newNickname.trim().length < 2) {
-      alert("닉네임은 2자 이상 입력해주세요.");
+      showAlert(t('profile_settings'), "닉네임은 2자 이상 입력해주세요.", 'error');
       return;
     }
     setIsUpdatingNickname(true);
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/update-nickname', {
+      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/user/update-nickname?t=${Date.now()}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -138,10 +155,10 @@ function App() {
       if (response.ok) {
         setNickname(newNickname.trim());
         localStorage.setItem('user_nickname', newNickname.trim());
-        alert("닉네임이 수정되었습니다.");
+        showAlert(t('profile_settings'), "닉네임이 수정되었습니다.", 'success');
       }
     } catch (error) {
-      alert("닉네임 수정 중 오류가 발생했습니다.");
+      showAlert(t('profile_settings'), "닉네임 수정 중 오류가 발생했습니다.", 'error');
     } finally {
       setIsUpdatingNickname(false);
     }
@@ -151,16 +168,15 @@ function App() {
     if (!window.confirm("정말로 탈퇴하시겠습니까? 모든 대화 기록이 삭제됩니다.")) return;
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/withdraw', {
+      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/user/withdraw?t=${Date.now()}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        alert("탈퇴 처리가 완료되었습니다.");
-        handleLogout();
+        showAlert("Success", "탈퇴 처리가 완료되었습니다.", 'success', () => handleLogout());
       }
     } catch (error) {
-      alert("탈퇴 처리 중 오류가 발생했습니다.");
+      showAlert("Error", "탈퇴 처리 중 오류가 발생했습니다.", 'error');
     }
   };
 
@@ -205,17 +221,11 @@ function App() {
       }
     } catch (error: any) {
       clearTimeout(profileTimeout);
-      console.error("Profile fetch error:", error);
       setShowAuthModal(true);
     } finally {
       setIsInitialLoading(false);
       setIsLoggingIn(false);
     }
-  };
-
-  const handleAuthModalConfirm = () => {
-    setShowAuthModal(false);
-    handleLogout();
   };
 
   const handleAskAi = async (customPrompt?: string) => {
@@ -240,7 +250,7 @@ function App() {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/ai/ask', {
+      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/ai/ask?t=${Date.now()}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -342,6 +352,11 @@ function App() {
     window.history.replaceState({}, document.title, "/");
   };
 
+  const handleAuthModalConfirm = () => {
+    setShowAuthModal(false);
+    handleLogout();
+  };
+
   const filteredHistory = history.filter(item => 
     item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.answer.toLowerCase().includes(searchQuery.toLowerCase())
@@ -363,7 +378,7 @@ function App() {
       {/* Auth Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6 scale-in-center">
+          <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6">
             <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
               <span className="material-symbols-outlined text-red-500 text-3xl">lock_open</span>
             </div>
@@ -378,6 +393,43 @@ function App() {
               className="w-full h-14 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
             >
               {t('auth_modal_button')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Universal Alert Modal */}
+      {modalConfig.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+              modalConfig.type === 'success' ? 'bg-green-500/10 border border-green-500/20' :
+              modalConfig.type === 'error' ? 'bg-red-500/10 border border-red-500/20' :
+              'bg-primary/10 border border-primary/20'
+            }`}>
+              <span className={`material-symbols-outlined text-3xl ${
+                modalConfig.type === 'success' ? 'text-green-500' :
+                modalConfig.type === 'error' ? 'text-red-500' :
+                'text-primary'
+              }`}>
+                {modalConfig.type === 'success' ? 'check_circle' : 
+                 modalConfig.type === 'error' ? 'error' : 'info'}
+              </span>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-white">{modalConfig.title}</h3>
+              <p className="text-sm text-white/50 leading-relaxed break-words whitespace-pre-wrap">
+                {modalConfig.message}
+              </p>
+            </div>
+            <button 
+              onClick={() => {
+                setModalConfig({ ...modalConfig, show: false });
+                if (modalConfig.onConfirm) modalConfig.onConfirm();
+              }}
+              className="w-full h-14 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-white/10 transition-all active:scale-95"
+            >
+              OK
             </button>
           </div>
         </div>
@@ -432,7 +484,7 @@ function App() {
                             <button 
                               onClick={() => {
                                 navigator.clipboard.writeText(msg.text);
-                                alert(t('copied'));
+                                showAlert("Success", t('copied'), 'success');
                               }}
                               className="absolute -bottom-10 right-0 bg-white/10 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/70 hover:text-white z-30"
                             >
@@ -745,14 +797,14 @@ function App() {
             <div className="text-white/30 text-xs text-center font-normal leading-normal mt-4 px-8">
               {t('terms_prefix')}
               <button 
-                onClick={() => alert(t('terms_content'))}
+                onClick={() => showAlert(t('terms'), t('terms_content'), 'info')}
                 className="underline underline-offset-2 hover:text-white/40"
               >
                 {t('terms')}
               </button>
               {t('and')}
               <button 
-                onClick={() => alert(t('privacy_content'))}
+                onClick={() => showAlert(t('privacy'), t('privacy_content'), 'info')}
                 className="underline underline-offset-2 hover:text-white/40"
               >
                 {t('privacy')}
