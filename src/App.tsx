@@ -82,8 +82,10 @@ function App() {
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
+      handleLogout();
     } finally {
       setIsInitialLoading(false);
+      setIsLoggingIn(false);
     }
   };
 
@@ -194,11 +196,15 @@ function App() {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_nickname');
     setIsLoggedIn(false);
+    setIsLoggingIn(false);
+    setIsInitialLoading(false);
     setNickname(null);
     setQuestion('');
     setMessages([]);
     setHistory([]);
     setActiveTab('chat');
+    // URL 파라미터 제거 및 홈으로 리다이렉트
+    window.history.replaceState({}, document.title, "/");
   };
 
   const filteredHistory = history.filter(item => 
