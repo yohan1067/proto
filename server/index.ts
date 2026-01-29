@@ -265,11 +265,11 @@ export default {
 				const email = userData.kakao_account?.email || null;
 
 				const now = new Date().toISOString();
+				// 닉네임은 처음 가입할 때만 저장하고, 이후 로그인 시에는 덮어쓰지 않음
 				await env.DB.prepare(`
 					INSERT INTO User (kakaoId, nickname, email, isAdmin, createdAt, updatedAt) 
 					VALUES (?, ?, ?, ?, ?, ?)
 					ON CONFLICT(kakaoId) DO UPDATE SET 
-						nickname = excluded.nickname, 
 						email = excluded.email,
 						updatedAt = excluded.updatedAt
 				`).bind(kakaoId, nickname, email, nickname === '최요한' ? 1 : 0, now, now).run();
