@@ -6,19 +6,18 @@ export interface Env {
 	DB: D1Database;
 	KAKAO_CLIENT_ID: string;
 	KAKAO_CLIENT_SECRET: string;
+	GEMINI_API_KEY: string;
 	JWT_SECRET: string;
 }
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
+let prisma: PrismaClient;
+
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
-		const adapter = new PrismaD1(env.DB);
-		const prisma = new PrismaClient({ adapter });
-		const jwtSecret = env.JWT_SECRET || 'fallback-secret-key-12345';
-
 		const corsHeaders = {
 			'Access-Control-Allow-Origin': '*',
 			'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE',
