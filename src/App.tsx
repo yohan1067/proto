@@ -384,11 +384,7 @@ function App() {
         <div className="relative flex-1 flex flex-col justify-between overflow-hidden">
           {/* Top Decorative */}
           <div className="flex items-center bg-transparent p-4 justify-end z-10 mt-4">
-            <div className="flex gap-2 opacity-30">
-              <span className="material-symbols-outlined text-lg">signal_cellular_alt</span>
-              <span className="material-symbols-outlined text-lg">wifi</span>
-              <span className="material-symbols-outlined text-lg">battery_full</span>
-            </div>
+            {/* Icons removed */}
           </div>
 
           {/* Hero Section */}
