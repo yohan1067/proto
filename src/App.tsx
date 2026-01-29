@@ -97,6 +97,10 @@ function App() {
     
     inputRef.current?.focus();
 
+    // 타임아웃 설정을 위한 AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30초 후 중단
+
     try {
       const token = localStorage.getItem('access_token');
       const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/ai/ask', {
@@ -105,9 +109,11 @@ function App() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ prompt: prompt })
+        body: JSON.stringify({ prompt: prompt }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (response.ok) {
@@ -128,10 +134,15 @@ function App() {
         };
         setMessages(prev => [...prev, aiErrorMsg]);
       }
-    } catch (error) {
+    } catch (error: any) {
+       clearTimeout(timeoutId);
+       let errorText = 'Connection error occurred.';
+       if (error.name === 'AbortError') {
+         errorText = '[Error] 요청 시간이 초과되었습니다 (30초).';
+       }
        const aiErrorMsg: Message = {
           id: Date.now() + 1,
-          text: 'Connection error occurred.',
+          text: errorText,
           sender: 'ai',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };

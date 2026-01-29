@@ -99,6 +99,10 @@ export default {
 				                const { prompt } = await request.json() as any;
 				                const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
 				
+				                // 서버 측 타임아웃 설정 (25초)
+				                const aiController = new AbortController();
+				                const aiTimeout = setTimeout(() => aiController.abort(), 25000);
+
 				                // Google Gemini API 호출 (최신 2.5-flash 모델 사용)
 				                const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
 				                    method: 'POST',
@@ -109,15 +113,19 @@ export default {
 				                        },
 				                        contents: [{ parts: [{ text: prompt }] }],
 				                        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-				                    })
+				                    }),
+				                    signal: aiController.signal
 				                });
 				
+				                clearTimeout(aiTimeout);
 				                const aiData: any = await aiResponse.json();
 				                
 				                if (!aiResponse.ok) {
+				                    console.error('Gemini API Error:', aiData);
 				                    return new Response(JSON.stringify({
 				                        error: 'Gemini API Error',
-				                        message: aiData.error?.message
+				                        message: aiData.error?.message,
+				                        details: aiData
 				                    }), {
 				                        status: aiResponse.status,
 				                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
