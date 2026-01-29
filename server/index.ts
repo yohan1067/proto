@@ -181,15 +181,23 @@ export default {
 				});
 
 				const aiData: any = await aiResponse.json();
+				console.log("Gemini Raw Response:", JSON.stringify(aiData));
+
+				if (!aiResponse.ok) {
+					return new Response(JSON.stringify({ error: aiData.error?.message || "Gemini API Error" }), { status: aiResponse.status, headers: corsHeaders });
+				}
+
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
 				if (answer) {
 					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
+					return new Response(JSON.stringify({ answer }), {
+						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+					});
+				} else {
+					const reason = aiData.promptFeedback?.blockReason || "Unknown Reason (Safety Filter?)";
+					return new Response(JSON.stringify({ error: `AI 답변 생성 실패: ${reason}` }), { status: 500, headers: corsHeaders });
 				}
-
-				return new Response(JSON.stringify({ answer }), {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				});
 			} catch (e: any) {
 				return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
 			}
