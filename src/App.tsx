@@ -393,8 +393,8 @@ function App() {
                    </div>
                 )}
                 {messages.map((msg) => (
-                  <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[85%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
-                    <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group`}>
+                  <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
+                    <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full`}>
                       {msg.text}
                       {msg.sender === 'ai' && (
                         <button 
@@ -589,13 +589,13 @@ function App() {
                   </div>
                 </section>
 
-                <section className="space-y-4">
+                <section className="space-y-4 max-w-full overflow-hidden">
                   <h2 className="text-sm font-bold text-primary uppercase tracking-widest">{t('admin_user_management')} ({users.length})</h2>
                   <div className="space-y-3">
                     {users.map(u => (
-                      <div key={u.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-white">
+                      <div key={u.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center gap-4 overflow-hidden">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-white truncate">
                             {u.nickname} 
                             {u.isAdmin ? (
                               <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2 font-black tracking-tighter">ADMIN</span>
@@ -603,9 +603,9 @@ function App() {
                               <span className="text-[10px] bg-white/5 text-white/40 px-2 py-0.5 rounded-full ml-2 font-medium tracking-tighter">USER</span>
                             )}
                           </p>
-                          <p className="text-xs text-white/40">{u.email || 'No email'}</p>
+                          <p className="text-xs text-white/40 truncate">{u.email || 'No email'}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex-shrink-0">
                           <p className="text-[10px] text-white/20">{new Date(u.createdAt).toLocaleDateString()}</p>
                         </div>
                       </div>
