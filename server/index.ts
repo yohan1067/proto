@@ -66,23 +66,46 @@ export default {
 
 		// 2. 내 정보 가져오기 엔드포인트
 		if (url.pathname === '/api/user/me' && request.method === 'GET') {
+			console.log("[ME] Request received");
 			try {
 				const authHeader = request.headers.get('Authorization');
 				if (!authHeader || !authHeader.startsWith('Bearer ')) {
+					console.log("[ME] No auth header");
 					return new Response('Unauthorized', { status: 401, headers: corsHeaders });
 				}
 				const token = authHeader.split(' ')[1];
+				console.log("[ME] Verifying token...");
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				const user = await prisma.user.findUnique({
+				console.log("[ME] Token decoded, userId:", decoded.userId);
+
+				// DB 조회에 타임아웃 적용 (5초)
+				const userPromise = prisma.user.findUnique({
 					where: { id: decoded.userId },
 					select: { id: true, nickname: true, email: true, isAdmin: true }
 				});
-				if (!user) return new Response('User not found', { status: 404, headers: corsHeaders });
+				
+				const timeoutPromise = new Promise((_, reject) => 
+					setTimeout(() => reject(new Error("Database timeout")), 5000)
+				);
+
+				console.log("[ME] Querying database...");
+				const user = await Promise.race([userPromise, timeoutPromise]) as any;
+				
+				if (!user) {
+					console.log("[ME] User not found in DB");
+					return new Response('User not found', { status: 404, headers: corsHeaders });
+				}
+				
+				console.log("[ME] Success, returning user data");
 				return new Response(JSON.stringify(user), {
 					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 				});
-			} catch (e) {
-				return new Response('Invalid token', { status: 401, headers: corsHeaders });
+			} catch (e: any) {
+				console.error("[ME] Error occurred:", e.message);
+				return new Response(JSON.stringify({ error: e.message }), { 
+					status: e.message === "Database timeout" ? 504 : 401, 
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+				});
 			}
 		}
 
