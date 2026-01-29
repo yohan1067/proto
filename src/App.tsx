@@ -294,13 +294,13 @@ function App() {
           errorMsg = errorJson.message || errorJson.error || errorMsg;
         } catch (e) {}
         
-        const aiErrorMsg: Message = {
+        const aiMsg: Message = {
           id: Date.now() + 1,
           text: `[Error] ${errorMsg}`,
           sender: 'ai',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        setMessages(prev => [...prev, aiErrorMsg]);
+        setMessages(prev => [...prev, aiMsg]);
       }
     } catch (error: any) {
        clearTimeout(timeoutId);
@@ -308,13 +308,13 @@ function App() {
        if (error.name === 'AbortError') {
          errorText = '[Error] 요청 시간이 초과되었습니다 (60초).';
        }
-       const aiErrorMsg: Message = {
+       const aiMsg: Message = {
           id: Date.now() + 1,
           text: errorText,
           sender: 'ai',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        setMessages(prev => [...prev, aiErrorMsg]);
+        setMessages(prev => [...prev, aiMsg]);
     } finally {
       setIsLoadingAi(false);
       inputRef.current?.focus();

@@ -108,12 +108,14 @@ export default {
 					});
 				};
 
-				// 속도가 가장 빠른 모델 위주로 재편
+				// 가동률이 높은 최신 무료 모델들로 리스트 대폭 보강
 				const models = [
 					"google/gemini-2.0-flash-exp:free",
-					"meta-llama/llama-3.3-70b-instruct:free",
 					"google/gemma-3-27b-it:free",
-					"mistralai/mistral-small-2409:free"
+					"deepseek/deepseek-r1:free",
+					"mistralai/mistral-small-2409:free",
+					"meta-llama/llama-3.3-70b-instruct:free",
+					"qwen/qwen-2.5-72b-instruct:free"
 				];
 
 				let aiResponse: any;
