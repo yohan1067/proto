@@ -171,14 +171,13 @@ export default {
 									
 									if (aiResponse.ok) break;
 									
-									lastError = aiData.error?.message || "Unknown error";
-									console.error(`Model ${model} failed: ${lastError}`);
-									
-									// 리전 에러나 쿼터 에러가 아니면(예: 문법 에러) 즉시 중단
-									if (!lastError.includes("location") && !lastError.includes("quota")) break;
-								}
-				
-								if (!aiResponse.ok) {
+														lastError = aiData.error?.message || "Unknown error";
+														console.error(`Model ${model} failed: ${lastError}`);
+														
+														// 리전 에러, 쿼터 에러, 또는 모델 과부하(overloaded)일 경우 재시도
+														if (!lastError.includes("location") && !lastError.includes("quota") && !lastError.includes("overloaded")) break;
+													}
+																	if (!aiResponse.ok) {
 									const colo = (request as any).cf?.colo || 'Unknown';
 									let friendlyMessage = "AI 응답을 가져오지 못했습니다.";
 									
