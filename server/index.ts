@@ -11,8 +11,6 @@ export interface Env {
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
-let prisma: any; 
-
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
@@ -53,14 +51,14 @@ export default {
 				if (!refreshToken) return jsonResponse({ error: 'Missing refresh token' }, 400);
 
 				const decoded = jwt.verify(refreshToken, jwtSecret) as any;
-				const user = await env.DB.prepare("SELECT * FROM User WHERE id = ?").bind(decoded.userId).first();
+				const user: any = await env.DB.prepare("SELECT * FROM User WHERE id = ?").bind(Number(decoded.userId)).first();
 
 				if (!user || user.refreshToken !== refreshToken) {
 					return jsonResponse({ error: 'Invalid refresh token' }, 401);
 				}
 
-				const tokens = generateTokens(user.id as number);
-				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(tokens.refreshToken, user.id).run();
+				const tokens = generateTokens(Number(user.id));
+				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(String(tokens.refreshToken), Number(user.id)).run();
 
 				return jsonResponse(tokens);
 			}
@@ -68,15 +66,11 @@ export default {
 			// 2. 내 정보 가져오기
 			if (url.pathname === '/api/user/me' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
-				if (!authHeader || !authHeader.startsWith('Bearer ')) {
-					return jsonResponse({ error: 'Unauthorized' }, 401);
-				}
-				const token = authHeader.split(' ')[1];
+				const token = authHeader?.split(' ')[1];
+				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 
-				const userPromise = env.DB.prepare("SELECT id, nickname, email, isAdmin, createdAt FROM User WHERE id = ?").bind(decoded.userId).first();
-				const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Database timeout")), 15000));
-				const user = await Promise.race([userPromise, timeoutPromise]) as any;
+				const user: any = await env.DB.prepare("SELECT id, nickname, email, isAdmin, createdAt FROM User WHERE id = ?").bind(Number(decoded.userId)).first();
 				
 				if (!user) return jsonResponse({ error: 'User not found' }, 404);
 				return jsonResponse(user);
@@ -88,7 +82,7 @@ export default {
 				const token = authHeader?.split(' ')[1];
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				const userId = decoded.userId;
+				const userId = Number(decoded.userId);
 
 				await env.DB.prepare("DELETE FROM ChatHistory WHERE userId = ?").bind(userId).run();
 				await env.DB.prepare("DELETE FROM LoginHistory WHERE userId = ?").bind(userId).run();
@@ -97,21 +91,21 @@ export default {
 				return jsonResponse({ success: true });
 			}
 
-			// 2-3. 회원 목록 (관리자)
+			// 2-3. 회원 목록
 			if (url.pathname === '/api/admin/users' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				
-				const adminCheck: any = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
+				const adminCheck: any = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(Number(decoded.userId)).first();
 				if (!adminCheck || !adminCheck.isAdmin) return jsonResponse({ error: 'Forbidden' }, 403);
 
 				const { results } = await env.DB.prepare("SELECT id, kakaoId, nickname, email, isAdmin, createdAt FROM User ORDER BY createdAt DESC").all();
 				return jsonResponse(results);
 			}
 
-			// 2-4. 닉네임 수정 API
+			// 2-4. 닉네임 수정
 			if (url.pathname === '/api/user/update-nickname' && request.method === 'PATCH') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
@@ -120,31 +114,30 @@ export default {
 				const { nickname } = await request.json() as any;
 
 				if (!nickname || nickname.trim().length < 2) {
-					return jsonResponse({ error: 'Nickname must be at least 2 characters' }, 400);
+					return jsonResponse({ error: 'Nickname too short' }, 400);
 				}
 
-				await env.DB.prepare("UPDATE User SET nickname = ?, updatedAt = DATETIME('now') WHERE id = ?").bind(nickname.trim(), decoded.userId).run();
-				return jsonResponse({ success: true, nickname: nickname.trim() });
+				await env.DB.prepare("UPDATE User SET nickname = ?, updatedAt = ? WHERE id = ?").bind(nickname.trim(), new Date().toISOString(), Number(decoded.userId)).run();
+				return jsonResponse({ success: true });
 			}
 
-			// 2-1. 관리자 프롬프트 관리
+			// 2-1. 관리자 프롬프트
 			if (url.pathname === '/api/admin/prompt') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				const user: any = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
-				
-				if (!user || !user.isAdmin) return jsonResponse({ error: 'Forbidden' }, 403);
+				const adminCheck: any = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(Number(decoded.userId)).first();
+				if (!adminCheck || !adminCheck.isAdmin) return jsonResponse({ error: 'Forbidden' }, 403);
 
 				if (request.method === 'GET') {
-					const config: any = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
+					const config: any = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = ?").bind('system_prompt').first();
 					return jsonResponse({ prompt: config?.value || '너는 한국어로 코드 전문가야' });
 				}
 
 				if (request.method === 'POST') {
 					const { prompt } = await request.json() as any;
-					await env.DB.prepare("INSERT INTO SystemConfig (key, value) VALUES ('system_prompt', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(prompt).run();
+					await env.DB.prepare("INSERT INTO SystemConfig (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind('system_prompt', String(prompt)).run();
 					return jsonResponse({ success: true });
 				}
 			}
@@ -155,73 +148,48 @@ export default {
 				if (!authHeader) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const token = authHeader.split(' ')[1];
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				const userId = decoded.userId;
+				const userId = Number(decoded.userId);
 				const { prompt } = await request.json() as any;
 
-				const config: any = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
+				const config: any = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = ?").bind('system_prompt').first();
 				const systemPrompt = config?.value || '너는 한국어로 코드 전문가야';
 
 				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
 				
 				const callGemini = async (modelName: string) => {
-					console.log(`Calling Gemini API with model: ${modelName}`);
-					// 지역 제한 우회를 위해 주소 체계를 미세하게 변경 (가능한 경우)
-					const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
-					return await fetch(url, {
+					const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`, {
 						method: 'POST',
-						headers: { 
-							'Content-Type': 'application/json',
-							'x-goog-api-key': GEMINI_API_KEY // 헤더에도 키 명시 시도
-						},
+						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({
-							contents: [
-								{ role: 'user', parts: [{ text: `시스템 지침: ${systemPrompt}\n\n사용자 질문: ${prompt}` }] }
-							],
+							contents: [{ role: 'user', parts: [{ text: `시스템 지침: ${systemPrompt}\n\n사용자 질문: ${prompt}` }] }],
 							generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
 						})
 					});
+					return response;
 				};
 
-				// 2026년 1월 기준 무료 할당량이 가장 높은 2.5-flash-lite를 최상단에 배치
-				const modelsToTry = [
-					'gemini-2.5-flash-lite',
-					'gemini-2.5-flash',
-					'gemini-2.0-flash',
-					'gemini-3-flash-preview'
-				];
-				let lastError = "";
+				const modelsToTry = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
 				let aiResponse: any;
 				let aiData: any;
+				let lastError = "";
 
 				for (const model of modelsToTry) {
 					aiResponse = await callGemini(model);
 					aiData = await aiResponse.json();
 					if (aiResponse.ok) break;
 					lastError = aiData.error?.message || "Unknown error";
-					const isRetryable = lastError.toLowerCase().includes("location") || 
-					                    lastError.toLowerCase().includes("quota") || 
-					                    lastError.toLowerCase().includes("overloaded");
-					if (!isRetryable) break;
 				}
 
 				if (!aiResponse.ok) {
-					const colo = (request as any).cf?.colo || 'Unknown';
-					let friendlyMessage = "AI 응답을 가져오지 못했습니다.";
-					if (lastError.includes("location")) {
-						friendlyMessage = `현재 접속 지역(${colo})은 구글 AI 서비스를 지원하지 않습니다. VPN을 사용 중이라면 해제하거나 한국 리전으로 접속해주세요.`;
-					} else if (lastError.includes("quota")) {
-						friendlyMessage = "일일 AI 사용 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.";
-					}
-					return jsonResponse({ error: `Gemini API Error (${colo})`, message: friendlyMessage, details: lastError }, aiResponse.status);
+					return jsonResponse({ error: lastError }, aiResponse.status);
 				}
 
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 				if (answer) {
-					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
+					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer, createdAt) VALUES (?, ?, ?, ?)").bind(userId, String(prompt), String(answer), new Date().toISOString()).run();
 					return jsonResponse({ answer });
-				} else {
-					return jsonResponse({ error: 'AI 답변 생성 실패' }, 500);
 				}
+				return jsonResponse({ error: 'AI 답변 생성 실패' }, 500);
 			}
 
 			// 4. 대화 기록
@@ -231,7 +199,7 @@ export default {
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 
-				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").all();
+				const { results } = await env.DB.prepare("SELECT id, userId, question, answer, createdAt FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").bind(Number(decoded.userId)).all();
 				return jsonResponse(results);
 			}
 
@@ -262,12 +230,11 @@ export default {
 				});
 
 				const userData: any = await userResponse.json();
-				const kakaoId = userData.id;
+				const kakaoId = Number(userData.id);
 				const nickname = userData.kakao_account?.profile?.nickname || 'User';
 				const email = userData.kakao_account?.email || null;
 
 				const now = new Date().toISOString();
-				// 닉네임은 처음 가입할 때만 저장하고, 이후 로그인 시에는 덮어쓰지 않음
 				await env.DB.prepare(`
 					INSERT INTO User (kakaoId, nickname, email, isAdmin, createdAt, updatedAt) 
 					VALUES (?, ?, ?, ?, ?, ?)
@@ -276,22 +243,21 @@ export default {
 						updatedAt = excluded.updatedAt
 				`).bind(kakaoId, nickname, email, nickname === '최요한' ? 1 : 0, now, now).run();
 
-				const user: any = await env.DB.prepare("SELECT id FROM User WHERE kakaoId = ?").bind(kakaoId).first();
+				const dbUser: any = await env.DB.prepare("SELECT id FROM User WHERE kakaoId = ?").bind(kakaoId).first();
 				
 				const region = (request as any).cf?.region || (request as any).cf?.country || 'Unknown';
-				await env.DB.prepare("INSERT INTO LoginHistory (userId, region) VALUES (?, ?)").bind(user.id, region).run();
+				await env.DB.prepare("INSERT INTO LoginHistory (userId, region, createdAt) VALUES (?, ?, ?)").bind(Number(dbUser.id), region, now).run();
 
-				const { accessToken, refreshToken } = generateTokens(user.id);
-				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
+				const { accessToken, refreshToken } = generateTokens(Number(dbUser.id));
+				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(String(refreshToken), Number(dbUser.id)).run();
 
-				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_FINAL_3`;
+				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_FINAL_REDEPLOY`;
 				return Response.redirect(redirectUrl, 302);
 			}
 
 			return jsonResponse({ error: 'Not Found' }, 404);
 
 		} catch (e: any) {
-			console.error("Global Error:", e.message);
 			return jsonResponse({ error: e.message || 'Internal Server Error' }, 500);
 		}
 	},
