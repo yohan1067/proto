@@ -262,26 +262,47 @@ function App() {
                   ))}
                 </div>
                 
-                <form 
-                  onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
-                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto"
-                >
-                  <input 
-                    ref={inputRef}
-                    className="bg-transparent border-none flex-1 focus:ring-0 text-sm text-white placeholder-white/30 py-2" 
-                    placeholder={t('ask_placeholder')}
-                    type="text"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                  />
-                  <button 
-                    type="submit"
-                    disabled={isLoadingAi}
-                    className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined text-white text-[20px] fill-1">colors_spark</span>
-                  </button>
-                </form>
+                            <form 
+                
+                              onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
+                
+                              className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full"
+                
+                            >
+                
+                              <input 
+                
+                                ref={inputRef}
+                
+                                className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/30 py-2" 
+                
+                                placeholder={t('ask_placeholder')}
+                
+                                type="text"
+                
+                                value={question}
+                
+                                onChange={(e) => setQuestion(e.target.value)}
+                
+                              />
+                
+                              <button 
+                
+                                type="submit"
+                
+                                disabled={isLoadingAi}
+                
+                                className="w-10 h-10 flex-shrink-0 rounded-xl bg-primary flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
+                
+                              >
+                
+                                <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
+                
+                              </button>
+                
+                            </form>
+                
+                
               </div>
             </>
           ) : (
@@ -369,11 +390,17 @@ function App() {
                 </div>
                 <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_history')}</span>
               </button>
-              <button className="flex flex-col items-center gap-1 group text-white/40">
+              <button 
+                onClick={() => alert(t('coming_soon'))}
+                className="flex flex-col items-center gap-1 group text-white/40"
+              >
                 <span className="material-symbols-outlined group-hover:text-white transition-colors">explore</span>
                 <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_explore')}</span>
               </button>
-              <button className="flex flex-col items-center gap-1 group text-white/40">
+              <button 
+                onClick={() => alert(t('coming_soon'))}
+                className="flex flex-col items-center gap-1 group text-white/40"
+              >
                 <span className="material-symbols-outlined group-hover:text-white transition-colors">person</span>
                 <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_profile')}</span>
               </button>
@@ -429,7 +456,20 @@ function App() {
             </div>
 
             <p className="text-white/30 text-xs text-center font-normal leading-normal mt-4 px-8">
-              {t('terms_prefix')}<a className="underline underline-offset-2 hover:text-white/40" href="#">{t('terms')}</a>{t('and')}<a className="underline underline-offset-2 hover:text-white/40" href="#">{t('privacy')}</a>.
+              {t('terms_prefix')}
+              <button 
+                onClick={() => alert(t('terms_content'))}
+                className="underline underline-offset-2 hover:text-white/40"
+              >
+                {t('terms')}
+              </button>
+              {t('and')}
+              <button 
+                onClick={() => alert(t('privacy_content'))}
+                className="underline underline-offset-2 hover:text-white/40"
+              >
+                {t('privacy')}
+              </button>.
             </p>
           </div>
 

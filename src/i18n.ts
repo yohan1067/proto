@@ -34,7 +34,10 @@ const resources = {
       "nav_history": "History",
       "nav_explore": "Explore",
       "nav_profile": "Profile",
-      "no_history": "No conversation history yet."
+      "no_history": "No conversation history yet.",
+      "coming_soon": "Service under construction. Coming soon!",
+      "terms_content": "Terms of Service\n\n1. Use of Service: This AI chat app is provided for creative and informational purposes.\n2. User Responsibilities: Users are responsible for their interactions with the AI.\n3. Content Ownership: AI-generated content follows our standard usage guidelines.",
+      "privacy_content": "Privacy Policy\n\n1. Data Collection: We collect minimum data for authentication (Kakao ID) and chat history.\n2. Data Usage: Your chat history is stored to provide better AI responses.\n3. Data Security: We prioritize the security of your information using Cloudflare infrastructure."
     }
   },
   ko: {
@@ -68,7 +71,10 @@ const resources = {
       "nav_history": "기록",
       "nav_explore": "탐색",
       "nav_profile": "프로필",
-      "no_history": "아직 대화 기록이 없습니다."
+      "no_history": "아직 대화 기록이 없습니다.",
+      "coming_soon": "서비스 준비 중입니다. 곧 찾아뵙겠습니다!",
+      "terms_content": "이용약관\n\n1. 서비스 이용: 본 AI 채팅 앱은 창의적이고 정보 제공 목적으로 제공됩니다.\n2. 사용자 책임: AI와의 상호작용은 사용자의 책임하에 이루어집니다.\n3. 콘텐츠 소유권: AI가 생성한 결과물은 당사의 표준 가이드라인을 따릅니다.",
+      "privacy_content": "개인정보처리방침\n\n1. 데이터 수집: 인증(카카오 ID) 및 채팅 내역을 위한 최소한의 데이터를 수집합니다.\n2. 데이터 활용: 저장된 채팅 내역은 더 나은 AI 답변 제공을 위해 활용됩니다.\n3. 데이터 보안: Cloudflare 인프라를 사용하여 귀하의 정보를 안전하게 보호합니다."
     }
   }
 };
