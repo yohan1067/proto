@@ -156,9 +156,16 @@ export default {
 					})
 				});
 
-				const aiData: any = await aiResponse.json();
-				if (!aiResponse.ok) return jsonResponse({ error: aiData.error?.message || "Gemini API Error" }, aiResponse.status);
-
+				                const aiData: any = await aiResponse.json();
+				                console.log("Gemini Raw Response:", JSON.stringify(aiData));
+				
+				                if (!aiResponse.ok) {
+				                    const colo = (request as any).cf?.colo || 'Unknown';
+				                    return jsonResponse({ 
+				                        error: `Gemini API Error (Region: ${colo})`, 
+				                        message: aiData.error?.message || "Location not supported or other API error"
+				                    }, aiResponse.status);
+				                }
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 				if (answer) {
 					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
