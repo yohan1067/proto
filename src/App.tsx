@@ -407,7 +407,7 @@ function App() {
                 >
                   <input 
                     ref={inputRef}
-                    className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/40 py-2 px-4" 
+                    className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/40 py-2 px-2" 
                     placeholder={t('ask_placeholder')}
                     type="text"
                     autoComplete="off"

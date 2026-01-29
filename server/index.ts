@@ -183,9 +183,15 @@ export default {
 				
 				                												
 				
-				                																// 할당량이 더 높고 지역 제한에 유연한 실험용 모델을 최상단에 배치
+				                																				// 모델 리스트 재정비 (안정적인 모델명 사용)
 				
-				                																const modelsToTry = ['gemini-2.0-flash-exp', 'gemini-2.0-flash-001', 'gemini-2.5-flash'];
+				                												
+				
+				                																				const modelsToTry = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash'];
+				
+				                												
+				
+				                																
 				
 				                				
 				
