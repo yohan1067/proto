@@ -183,9 +183,8 @@ export default {
 
 				const modelsToTry = [
 					'gemini-2.0-flash',
-					'gemini-2.0-flash-lite-preview-02-05',
-					'gemini-2.0-pro-exp-02-05',
-					'gemini-2.5-flash'
+					'gemini-2.5-flash',
+					'gemini-2.0-flash-lite'
 				];
 				let lastError = "";
 				let aiResponse: any;
