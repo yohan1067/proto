@@ -147,47 +147,45 @@ export default {
 
 				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
 				
-				                												const callGemini = async (modelName: string) => {
+				                																const callGemini = async (modelName: string) => {
 				
-				                													console.log(`Calling Gemini API with model: ${modelName}`);
+				                																	console.log(`Calling Gemini API with model: ${modelName}`);
 				
-				                													// 엔드포인트 주소를 미세하게 조정하여 재시도
+				                																	const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
 				
-				                													const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+				                																	return await fetch(url, {
 				
-				                													return await fetch(url, {
+				                																		method: 'POST',
 				
-				                														method: 'POST',
+				                																		headers: { 
 				
-				                														headers: { 
+				                																			'Content-Type': 'application/json',
 				
-				                															'Content-Type': 'application/json',
+				                																			'x-goog-api-client': 'genai-js/0.21.0'
 				
-				                															'x-goog-api-client': 'genai-js/0.21.0' // 클라이언트 정보 추가 (우회 시도)
+				                																		},
 				
-				                														},
+				                																		body: JSON.stringify({
 				
-				                														body: JSON.stringify({
+				                																			contents: [
 				
-				                															contents: [
+				                																				{ role: 'user', parts: [{ text: `시스템 지침: ${systemPrompt}\n\n사용자 질문: ${prompt}` }] }
 				
-				                																{ role: 'user', parts: [{ text: `시스템 지침: ${systemPrompt}\n\n사용자 질문: ${prompt}` }] }
+				                																			],
 				
-				                															],
+				                																			generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
 				
-				                															generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+				                																		})
 				
-				                														})
+				                																	});
 				
-				                													});
+				                																};
 				
-				                												};
+				                												
 				
-				                								
+				                																// 할당량이 더 높고 지역 제한에 유연한 실험용 모델을 최상단에 배치
 				
-				                				
-				
-				                								const modelsToTry = ['gemini-2.0-flash', 'gemini-2.5-flash'];
+				                																const modelsToTry = ['gemini-2.0-flash-exp', 'gemini-2.0-flash-001', 'gemini-2.5-flash'];
 				
 				                				
 				
