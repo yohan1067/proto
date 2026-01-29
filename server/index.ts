@@ -152,7 +152,7 @@ export default {
 					body: JSON.stringify({
 						system_instruction: { parts: [{ text: systemPrompt }] },
 						contents: [{ parts: [{ text: prompt }] }],
-						generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+						generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
 					})
 				});
 
