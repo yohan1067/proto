@@ -418,7 +418,7 @@ function App() {
 
               <main className={`flex-1 relative overflow-y-auto px-4 py-2 scroll-smooth no-scrollbar`}>
                 {messages.length === 0 ? (
-                   <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 px-10 text-center">
+                   <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 px-10 text-center -mt-20">
                       <span className="material-symbols-outlined text-6xl mb-4">chat_bubble</span>
                       <p className="text-lg font-medium">{t('help_label')}</p>
                    </div>
