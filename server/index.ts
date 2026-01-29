@@ -85,14 +85,14 @@ export default {
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				console.log("[ME] Token decoded, userId:", decoded.userId);
 
-				// DB 조회에 타임아웃 적용 (5초)
+				// DB 조회에 타임아웃 적용 (15초로 연장)
 				const userPromise = prisma.user.findUnique({
 					where: { id: decoded.userId },
 					select: { id: true, nickname: true, email: true, isAdmin: true }
 				});
 				
 				const timeoutPromise = new Promise((_, reject) => 
-					setTimeout(() => reject(new Error("Database timeout")), 5000)
+					setTimeout(() => reject(new Error("Database timeout")), 15000)
 				);
 
 				console.log("[ME] Querying database...");

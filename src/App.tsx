@@ -108,7 +108,7 @@ function App() {
 
   const fetchUserProfile = async (token: string) => {
     const profileController = new AbortController();
-    const profileTimeout = setTimeout(() => profileController.abort(), 10000);
+    const profileTimeout = setTimeout(() => profileController.abort(), 20000);
 
     try {
       console.log("Fetching user profile...");
