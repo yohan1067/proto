@@ -522,14 +522,14 @@ function App() {
                     <span className="material-symbols-outlined text-primary text-5xl fill-1">person</span>
                   </div>
                   <h2 className="text-xl font-bold text-white">{nickname}</h2>
-                  <p className="text-xs text-white/30 uppercase tracking-widest mt-1">User Account</p>
+                  <p className="text-xs text-white/30 uppercase tracking-widest mt-1">{t('profile_account_type')}</p>
                 </section>
 
                 <section className="space-y-4">
-                  <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em]">Settings</h3>
+                  <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em]">{t('profile_settings')}</h3>
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs text-white/40 ml-1">Nickname</label>
+                      <label className="text-xs text-white/40 ml-1">{t('profile_nickname_label')}</label>
                       <div className="flex gap-2">
                         <input 
                           type="text"
@@ -542,7 +542,7 @@ function App() {
                           disabled={isUpdatingNickname}
                           className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-all disabled:opacity-50"
                         >
-                          {isUpdatingNickname ? "..." : "Save"}
+                          {isUpdatingNickname ? "..." : t('profile_save')}
                         </button>
                       </div>
                     </div>
@@ -550,16 +550,16 @@ function App() {
                 </section>
 
                 <section className="space-y-4 pt-4">
-                  <h3 className="text-xs font-bold text-red-500/60 uppercase tracking-[0.2em]">Danger Zone</h3>
+                  <h3 className="text-xs font-bold text-red-500/60 uppercase tracking-[0.2em]">{t('profile_danger_zone')}</h3>
                   <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-4">
                     <p className="text-xs text-red-500/40 mb-4 leading-relaxed">
-                      Account deletion is permanent and cannot be undone. All your data will be wiped from our servers.
+                      {t('profile_withdraw_warning')}
                     </p>
                     <button 
                       onClick={handleWithdraw}
-                      className="w-full h-12 border border-red-500/30 text-red-500/60 hover:bg-red-500 hover:text-white rounded-xl transition-all text-xs font-bold"
+                      className="w-full h-12 border border-red-500/30 text-red-500/60 hover:bg-red-500 hover:text-white rounded-xl transition-all text-xs font-bold uppercase"
                     >
-                      WITHDRAW ACCOUNT
+                      {t('profile_withdraw_button')}
                     </button>
                   </div>
                 </section>
