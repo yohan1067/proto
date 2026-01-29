@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Orb Design</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "kakao-yellow": "#FEE500",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --orb-purple: #8b5cf6;
+            --orb-blue: #135bec;
+            --orb-core: #4f87ff;
+        }
+        body {
+            font-family: "Space Grotesk", sans-serif;
+        }
+        .ai-orb-glow {
+            background: radial-gradient(circle, rgba(19, 91, 236, 0.4) 0%, rgba(16, 22, 34, 0) 70%);
+        }
+        .ai-orb-core {
+            background: radial-gradient(circle, #4f87ff 0%, #135bec 50%, #0a0e17 100%);
+        }
+        .favicon-container {
+            aspect-ratio: 1/1;
+            background: #0a0e17;
+            border-radius: 22%;display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .favicon-orb {
+            width: 70%;
+            height: 70%;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, var(--orb-core) 0%, var(--orb-blue) 40%, #7c3aed 80%, transparent 100%);
+            box-shadow: 0 0 40px rgba(19, 91, 236, 0.6), 0 0 20px rgba(139, 92, 246, 0.4);
+            position: relative;
+        }
+        .favicon-orb::after {
+            content: '';
+            position: absolute;
+            inset: 15%;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-white antialiased overflow-x-hidden">
+<div class="relative flex min-h-screen w-full flex-col items-center justify-center p-8 gap-12">
+<div class="text-center mb-4">
+<h2 class="text-white/50 text-sm uppercase tracking-[0.2em] mb-8 font-medium">AI Orb Favicon Design</h2>
+</div>
+<div class="flex flex-wrap items-end justify-center gap-12">
+<div class="flex flex-col items-center gap-4">
+<div class="favicon-container w-[180px] shadow-2xl">
+<div class="favicon-orb"></div>
+</div>
+<span class="text-white/40 text-xs font-mono">180 x 180</span>
+</div>
+<div class="flex flex-col items-center gap-4">
+<div class="favicon-container w-[64px] shadow-xl">
+<div class="favicon-orb"></div>
+</div>
+<span class="text-white/40 text-xs font-mono">64 x 64</span>
+</div>
+<div class="flex flex-col items-center gap-4">
+<div class="favicon-container w-[32px] shadow-lg">
+<div class="favicon-orb"></div>
+</div>
+<span class="text-white/40 text-xs font-mono">32 x 32</span>
+</div>
+<div class="flex flex-col items-center gap-4">
+<div class="favicon-container w-[16px]">
+<div class="favicon-orb"></div>
+</div>
+<span class="text-white/40 text-xs font-mono">16 x 16</span>
+</div>
+</div>
+<div class="mt-12 max-w-sm w-full bg-white/5 border border-white/10 rounded-2xl p-6">
+<h3 class="text-lg font-semibold mb-4 text-white">Spec Sheet</h3>
+<ul class="space-y-3 text-sm text-white/60">
+<li class="flex justify-between border-b border-white/5 pb-2">
+<span>Background</span>
+<span class="text-white font-mono">#0A0E17</span>
+</li>
+<li class="flex justify-between border-b border-white/5 pb-2">
+<span>Core Color</span>
+<span class="text-white font-mono">#4F87FF</span>
+</li>
+<li class="flex justify-between border-b border-white/5 pb-2">
+<span>Glow Palette</span>
+<span class="text-white font-mono">Blue to Purple</span>
+</li>
+<li class="flex justify-between border-b border-white/5 pb-2">
+<span>Corner Radius</span>
+<span class="text-white font-mono">22% (iOS Standard)</span>
+</li>
+</ul>
+</div>
+<a class="mt-8 text-white/30 hover:text-white/60 transition-colors flex items-center gap-2 text-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined text-base">arrow_back</span>
+            Return to Splash
+        </a>
+</div>
+<div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full"></div>
+</div>
+
+</body></html>
