@@ -645,13 +645,6 @@ function App() {
                 </button>
               )}
               <button 
-                onClick={() => alert(t('coming_soon'))}
-                className="flex flex-col items-center gap-1 group text-white/40"
-              >
-                <span className="material-symbols-outlined group-hover:text-white transition-colors">explore</span>
-                <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_explore')}</span>
-              </button>
-              <button 
                 onClick={() => setActiveTab('profile')}
                 className={`flex flex-col items-center gap-1 group ${activeTab === 'profile' ? 'text-primary' : 'text-white/40'}`}
               >
