@@ -416,43 +416,46 @@ function App() {
                 </div>
               </header>
 
-              <main className={`flex-1 overflow-y-auto px-4 py-2 space-y-6 z-10 scroll-smooth no-scrollbar ${messages.length > 0 ? 'pb-40' : 'pb-0'}`}>
-                {messages.length === 0 && (
-                   <div className="h-full flex flex-col items-center justify-center opacity-30 px-10 text-center py-20">
+              <main className={`flex-1 relative overflow-y-auto px-4 py-2 scroll-smooth no-scrollbar`}>
+                {messages.length === 0 ? (
+                   <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 px-10 text-center">
                       <span className="material-symbols-outlined text-6xl mb-4">chat_bubble</span>
-                      <p className="text-lg">{t('help_label')}</p>
+                      <p className="text-lg font-medium">{t('help_label')}</p>
                    </div>
-                )}
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
-                    <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full`}>
-                      {msg.text}
-                      {msg.sender === 'ai' && (
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(msg.text);
-                            alert(t('copied'));
-                          }}
-                          className="absolute -bottom-10 right-0 bg-white/10 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/70 hover:text-white z-30"
-                        >
-                          <span className="material-symbols-outlined text-sm">content_copy</span>
-                          {t('copy')}
-                        </button>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
-                      {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
-                    </span>
+                ) : (
+                  <div className="space-y-6 pb-40">
+                    {messages.map((msg) => (
+                      <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
+                        <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full`}>
+                          {msg.text}
+                          {msg.sender === 'ai' && (
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(msg.text);
+                                alert(t('copied'));
+                              }}
+                              className="absolute -bottom-10 right-0 bg-white/10 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/70 hover:text-white z-30"
+                            >
+                              <span className="material-symbols-outlined text-sm">content_copy</span>
+                              {t('copy')}
+                            </button>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
+                          {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
+                        </span>
+                      </div>
+                    ))}
+                    {isLoadingAi && (
+                      <div className="flex flex-col items-start max-w-[85%] animate-pulse">
+                        <div className="glass-ai rounded-2xl rounded-tl-none p-4 text-[15px]">
+                          <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
-                ))}
-                {isLoadingAi && (
-                  <div className="flex flex-col items-start max-w-[85%] animate-pulse">
-                    <div className="glass-ai rounded-2xl rounded-tl-none p-4 text-[15px]">
-                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                    </div>
-                  </div>
                 )}
-                <div ref={messagesEndRef} />
               </main>
 
               <div className="fixed bottom-24 left-0 right-0 p-4 z-50 pointer-events-auto">
