@@ -18,6 +18,14 @@ let prisma: PrismaClient;
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
+		const jwtSecret = env.JWT_SECRET || 'fallback-secret-key-12345';
+
+		// Prisma 인스턴스 초기화 보장
+		if (!prisma) {
+			const adapter = new PrismaD1(env.DB);
+			prisma = new PrismaClient({ adapter });
+		}
+
 		const corsHeaders = {
 			'Access-Control-Allow-Origin': '*',
 			'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE',
