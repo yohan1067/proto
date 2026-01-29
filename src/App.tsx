@@ -213,7 +213,7 @@ function App() {
       if (response.ok) {
         const aiMsg: Message = {
           id: Date.now() + 1,
-          text: data.answer,
+          text: data.answer || "No response text",
           sender: 'ai',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
