@@ -595,7 +595,14 @@ function App() {
                     {users.map(u => (
                       <div key={u.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
                         <div>
-                          <p className="font-bold text-white">{u.nickname} {u.isAdmin && <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2">ADMIN</span>}</p>
+                          <p className="font-bold text-white">
+                            {u.nickname} 
+                            {u.isAdmin ? (
+                              <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2 font-black tracking-tighter">ADMIN</span>
+                            ) : (
+                              <span className="text-[10px] bg-white/5 text-white/40 px-2 py-0.5 rounded-full ml-2 font-medium tracking-tighter">USER</span>
+                            )}
+                          </p>
                           <p className="text-xs text-white/40">{u.email || 'No email'}</p>
                         </div>
                         <div className="text-right">
