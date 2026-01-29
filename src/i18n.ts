@@ -26,6 +26,8 @@ const resources = {
       "suggestion_poem": "Write a poem",
       "suggestion_coding": "Coding help",
       "suggestion_summarize": "Summarize text",
+      "copy": "Copy",
+      "copied": "Copied!",
       "history_title": "History",
       "search_placeholder": "Search conversations...",
       "today": "Today",

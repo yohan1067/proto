@@ -240,16 +240,29 @@ function App() {
                       <p className="text-lg">{t('help_label')}</p>
                    </div>
                 )}
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[85%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
-                    <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed`}>
-                      {msg.text}
-                    </div>
-                    <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
-                      {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
-                    </span>
-                  </div>
-                ))}
+                            {messages.map((msg) => (
+                              <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[85%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
+                                <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group`}>
+                                  {msg.text}
+                                  {msg.sender === 'ai' && (
+                                    <button 
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(msg.text);
+                                        alert(t('copied'));
+                                      }}
+                                      className="absolute -bottom-10 right-0 bg-white/5 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/50 hover:text-white"
+                                    >
+                                      <span className="material-symbols-outlined text-sm">content_copy</span>
+                                      {t('copy')}
+                                    </button>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
+                                  {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
+                                </span>
+                              </div>
+                            ))}
+                
                 {isLoadingAi && (
                   <div className="flex flex-col items-start max-w-[85%] animate-pulse">
                     <div className="glass-ai rounded-2xl rounded-tl-none p-4 text-[15px]">
