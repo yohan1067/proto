@@ -168,7 +168,14 @@ export default {
 					return response;
 				};
 
-				const modelsToTry = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+								const modelsToTry = [
+					'gemini-2.5-flash-lite', // 2026년 기준 가장 넉넉한 무료 쿼터
+					'gemini-2.5-flash',
+					'gemini-3-flash-preview',
+					'gemini-2.0-flash-lite'
+				];
+				// gemini-2.0-flash는 쿼터 0 이슈로 인해 제외함
+
 				let aiResponse: any;
 				let aiData: any;
 				let lastError = "";
