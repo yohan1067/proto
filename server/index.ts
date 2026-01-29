@@ -219,8 +219,8 @@ export default {
 				const email = userData.kakao_account?.email || null;
 
 				await env.DB.prepare(`
-					INSERT INTO User (kakaoId, nickname, email, isAdmin, updatedAt) 
-					VALUES (?, ?, ?, ?, DATETIME('now'))
+					INSERT INTO User (kakaoId, nickname, email, isAdmin, createdAt, updatedAt) 
+					VALUES (?, ?, ?, ?, DATETIME('now'), DATETIME('now'))
 					ON CONFLICT(kakaoId) DO UPDATE SET 
 						nickname = excluded.nickname, 
 						email = excluded.email,
