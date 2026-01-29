@@ -416,7 +416,7 @@ function App() {
                 </div>
               </header>
 
-              <main className="flex-1 overflow-y-auto px-4 py-2 space-y-6 z-10 scroll-smooth no-scrollbar pb-40">
+              <main className={`flex-1 overflow-y-auto px-4 py-2 space-y-6 z-10 scroll-smooth no-scrollbar ${messages.length > 0 ? 'pb-40' : 'pb-0'}`}>
                 {messages.length === 0 && (
                    <div className="h-full flex flex-col items-center justify-center opacity-30 px-10 text-center py-20">
                       <span className="material-symbols-outlined text-6xl mb-4">chat_bubble</span>
