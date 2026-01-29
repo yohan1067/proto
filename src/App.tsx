@@ -36,8 +36,10 @@ function App() {
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'chat' | 'history' | 'admin'>('chat');
+  const [isUpdatingNickname, setIsUpdatingNickname] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'chat' | 'history' | 'admin' | 'profile'>('chat');
   const [searchQuery, setSearchQuery] = useState('');
+  const [newNickname, setNewNickname] = useState<string>('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,16 +56,12 @@ function App() {
 
   const fetchChatHistory = async () => {
     try {
-      console.log("Fetching chat history...");
       const token = localStorage.getItem('access_token');
       const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/history?t=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (response.ok) {
         const data = await response.json();
-        console.log("Chat history fetched:", data);
-        // D1 results가 배열인지 확인 후 설정
         setHistory(Array.isArray(data) ? data : []);
       }
     } catch (error) {
@@ -120,6 +118,34 @@ function App() {
     }
   };
 
+  const handleUpdateNickname = async () => {
+    if (!newNickname.trim() || newNickname.trim().length < 2) {
+      alert("닉네임은 2자 이상 입력해주세요.");
+      return;
+    }
+    setIsUpdatingNickname(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/update-nickname', {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ nickname: newNickname.trim() })
+      });
+      if (response.ok) {
+        setNickname(newNickname.trim());
+        localStorage.setItem('user_nickname', newNickname.trim());
+        alert("닉네임이 수정되었습니다.");
+      }
+    } catch (error) {
+      alert("닉네임 수정 중 오류가 발생했습니다.");
+    } finally {
+      setIsUpdatingNickname(false);
+    }
+  };
+
   const handleWithdraw = async () => {
     if (!window.confirm("정말로 탈퇴하시겠습니까? 모든 대화 기록이 삭제됩니다.")) return;
     try {
@@ -143,6 +169,9 @@ function App() {
       fetchSystemPrompt();
       fetchUsers();
     }
+    if (isLoggedIn && activeTab === 'profile') {
+      setNewNickname(nickname || '');
+    }
   }, [isLoggedIn, activeTab]);
 
   const toggleLanguage = () => {
@@ -155,7 +184,6 @@ function App() {
     const profileTimeout = setTimeout(() => profileController.abort(), 20000);
 
     try {
-      console.log("Fetching user profile...");
       const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/me', {
         headers: { 'Authorization': `Bearer ${token}` },
         signal: profileController.signal
@@ -166,19 +194,15 @@ function App() {
       
       if (response.ok && contentType && contentType.includes("application/json")) {
         const userData = await response.json();
-        console.log("User profile fetched:", userData);
         setNickname(userData.nickname);
         localStorage.setItem('user_nickname', userData.nickname);
         setIsAdmin(!!userData.isAdmin);
         setIsLoggedIn(true);
       } else {
-        const errorText = await response.text();
-        console.error("Profile fetch failed:", response.status, errorText);
-        alert(`인증 실패 (Status: ${response.status}). 다시 로그인해주세요.`);
         handleLogout();
       }
     } catch (error: any) {
-      console.error("Profile fetch exception:", error);
+      clearTimeout(profileTimeout);
       handleLogout();
     } finally {
       setIsInitialLoading(false);
@@ -235,7 +259,7 @@ function App() {
         let errorMsg = `Server Error (${response.status})`;
         try {
           const errorJson = JSON.parse(errorText);
-          errorMsg = errorJson.error || errorMsg;
+          errorMsg = errorJson.message || errorJson.error || errorMsg;
         } catch (e) {}
         
         const aiErrorMsg: Message = {
@@ -317,7 +341,7 @@ function App() {
 
   if (isInitialLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark text-white">
         <div className="relative w-32 h-32 rounded-full ai-orb-core animate-pulse-slow flex items-center justify-center shadow-[0_0_40px_rgba(19,91,236,0.3)]">
           <span className="material-symbols-outlined text-white animate-spin">progress_activity</span>
         </div>
@@ -403,7 +427,7 @@ function App() {
               <div className="fixed bottom-24 left-0 right-0 p-4 z-50 pointer-events-auto">
                 <form 
                   onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
-                  className="input-container flex items-center gap-3 p-2 pl-2 rounded-2xl max-w-2xl mx-auto w-full shadow-2xl bg-[#161b2a] border border-white/10 backdrop-blur-2xl"
+                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full shadow-2xl bg-[#161b2a] border border-white/10 backdrop-blur-2xl"
                 >
                   <input 
                     ref={inputRef}
@@ -487,6 +511,60 @@ function App() {
                 <span className="material-symbols-outlined text-white text-3xl">add</span>
               </button>
             </>
+          ) : activeTab === 'profile' ? (
+            <>
+              <header className="pt-14 pb-4 px-6 sticky top-0 bg-background-dark/80 backdrop-blur-md z-20">
+                <h1 className="text-2xl font-bold tracking-tight">{t('nav_profile')}</h1>
+              </header>
+              <main className="flex-1 p-6 space-y-8 pb-32 overflow-y-auto no-scrollbar">
+                <section className="flex flex-col items-center py-4">
+                  <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(19,91,236,0.2)]">
+                    <span className="material-symbols-outlined text-primary text-5xl fill-1">person</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{nickname}</h2>
+                  <p className="text-xs text-white/30 uppercase tracking-widest mt-1">User Account</p>
+                </section>
+
+                <section className="space-y-4">
+                  <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em]">Settings</h3>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs text-white/40 ml-1">Nickname</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text"
+                          value={newNickname}
+                          onChange={(e) => setNewNickname(e.target.value)}
+                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-primary outline-none"
+                        />
+                        <button 
+                          onClick={handleUpdateNickname}
+                          disabled={isUpdatingNickname}
+                          className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-all disabled:opacity-50"
+                        >
+                          {isUpdatingNickname ? "..." : "Save"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-4 pt-4">
+                  <h3 className="text-xs font-bold text-red-500/60 uppercase tracking-[0.2em]">Danger Zone</h3>
+                  <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-4">
+                    <p className="text-xs text-red-500/40 mb-4 leading-relaxed">
+                      Account deletion is permanent and cannot be undone. All your data will be wiped from our servers.
+                    </p>
+                    <button 
+                      onClick={handleWithdraw}
+                      className="w-full h-12 border border-red-500/30 text-red-500/60 hover:bg-red-500 hover:text-white rounded-xl transition-all text-xs font-bold"
+                    >
+                      WITHDRAW ACCOUNT
+                    </button>
+                  </div>
+                </section>
+              </main>
+            </>
           ) : (
             <>
               <header className="pt-14 pb-4 px-6 sticky top-0 bg-background-dark/80 backdrop-blur-md z-20">
@@ -526,15 +604,6 @@ function App() {
                       </div>
                     ))}
                   </div>
-                </section>
-
-                <section className="pt-6 border-t border-white/5">
-                   <button 
-                    onClick={handleWithdraw}
-                    className="w-full h-12 border border-red-500/30 text-red-500/50 hover:bg-red-500 hover:text-white rounded-xl transition-all text-xs font-bold"
-                   >
-                     DANGER ZONE: WITHDRAW ACCOUNT
-                   </button>
                 </section>
               </main>
             </>
@@ -576,10 +645,10 @@ function App() {
                 <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_explore')}</span>
               </button>
               <button 
-                onClick={() => alert(t('coming_soon'))}
-                className="flex flex-col items-center gap-1 group text-white/40"
+                onClick={() => setActiveTab('profile')}
+                className={`flex flex-col items-center gap-1 group ${activeTab === 'profile' ? 'text-primary' : 'text-white/40'}`}
               >
-                <span className="material-symbols-outlined group-hover:text-white transition-colors">person</span>
+                <span className={`material-symbols-outlined ${activeTab === 'profile' ? 'fill-1' : 'group-hover:text-white transition-colors'}`}>person</span>
                 <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_profile')}</span>
               </button>
             </div>

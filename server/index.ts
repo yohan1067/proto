@@ -20,7 +20,7 @@ export default {
 
 		const corsHeaders = {
 			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE',
+			'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, DELETE, PATCH',
 			'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 			'Access-Control-Max-Age': '86400',
 		};
@@ -74,7 +74,7 @@ export default {
 				const token = authHeader.split(' ')[1];
 				const decoded = jwt.verify(token, jwtSecret) as any;
 
-				const userPromise = env.DB.prepare("SELECT id, nickname, email, isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
+				const userPromise = env.DB.prepare("SELECT id, nickname, email, isAdmin, createdAt FROM User WHERE id = ?").bind(decoded.userId).first();
 				const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Database timeout")), 15000));
 				const user = await Promise.race([userPromise, timeoutPromise]) as any;
 				
@@ -97,7 +97,7 @@ export default {
 				return jsonResponse({ success: true });
 			}
 
-			// 2-3. 회원 목록
+			// 2-3. 회원 목록 (관리자)
 			if (url.pathname === '/api/admin/users' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
@@ -111,7 +111,23 @@ export default {
 				return jsonResponse(results);
 			}
 
-			// 2-1. 관리자 프롬프트
+			// 2-4. 닉네임 수정 API
+			if (url.pathname === '/api/user/update-nickname' && request.method === 'PATCH') {
+				const authHeader = request.headers.get('Authorization');
+				const token = authHeader?.split(' ')[1];
+				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
+				const decoded = jwt.verify(token, jwtSecret) as any;
+				const { nickname } = await request.json() as any;
+
+				if (!nickname || nickname.trim().length < 2) {
+					return jsonResponse({ error: 'Nickname must be at least 2 characters' }, 400);
+				}
+
+				await env.DB.prepare("UPDATE User SET nickname = ?, updatedAt = DATETIME('now') WHERE id = ?").bind(nickname.trim(), decoded.userId).run();
+				return jsonResponse({ success: true, nickname: nickname.trim() });
+			}
+
+			// 2-1. 관리자 프롬프트 관리
 			if (url.pathname === '/api/admin/prompt') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
@@ -147,167 +163,56 @@ export default {
 
 				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
 				
-				                																const callGemini = async (modelName: string) => {
-				
-				                																	console.log(`Calling Gemini API with model: ${modelName}`);
-				
-				                																	const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
-				
-				                																	return await fetch(url, {
-				
-				                																		method: 'POST',
-				
-				                																		headers: { 
-				
-				                																			'Content-Type': 'application/json',
-				
-				                																			'x-goog-api-client': 'genai-js/0.21.0'
-				
-				                																		},
-				
-				                																		body: JSON.stringify({
-				
-				                																			contents: [
-				
-				                																				{ role: 'user', parts: [{ text: `시스템 지침: ${systemPrompt}\n\n사용자 질문: ${prompt}` }] }
-				
-				                																			],
-				
-				                																			generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-				
-				                																		})
-				
-				                																	});
-				
-				                																};
-				
-				                												
-				
-				                																								// 더 다양한 모델 리스트와 정확한 재시도 로직
-				
-				                												
-				
-				                																								const modelsToTry = [
-				
-				                												
-				
-				                																									'gemini-2.0-flash',
-				
-				                												
-				
-				                																									'gemini-2.0-flash-lite-preview-02-05',
-				
-				                												
-				
-				                																									'gemini-2.0-pro-exp-02-05',
-				
-				                												
-				
-				                																									'gemini-2.5-flash'
-				
-				                												
-				
-				                																								];
-				
-				                												
-				
-				                																								let lastError = "";
-				
-				                												
-				
-				                																								let aiResponse: any;
-				
-				                												
-				
-				                																								let aiData: any;
-				
-				                												
-				
-				                																				
-				
-				                												
-				
-				                																								for (const model of modelsToTry) {
-				
-				                												
-				
-				                																									aiResponse = await callGemini(model);
-				
-				                												
-				
-				                																									aiData = await aiResponse.json();
-				
-				                												
-				
-				                																									
-				
-				                												
-				
-				                																									if (aiResponse.ok) break;
-				
-				                												
-				
-				                																									
-				
-				                												
-				
-				                																									lastError = aiData.error?.message || "Unknown error";
-				
-				                												
-				
-				                																									console.error(`Model ${model} failed: ${lastError}`);
-				
-				                												
-				
-				                																									
-				
-				                												
-				
-				                																									// 리전, 쿼터, 과부하 에러 시 다음 모델 시도
-				
-				                												
-				
-				                																									const isRetryable = lastError.toLowerCase().includes("location") || 
-				
-				                												
-				
-				                																									                    lastError.toLowerCase().includes("quota") || 
-				
-				                												
-				
-				                																									                    lastError.toLowerCase().includes("overloaded");
-				
-				                												
-				
-				                																									
-				
-				                												
-				
-				                																									if (!isRetryable) break;
-				
-				                												
-				
-				                																								}
-				
-				                												
-				
-				                																				
-																	if (!aiResponse.ok) {
-									const colo = (request as any).cf?.colo || 'Unknown';
-									let friendlyMessage = "AI 응답을 가져오지 못했습니다.";
-									
-									if (lastError.includes("location")) {
-										friendlyMessage = `현재 접속 지역(${colo})은 구글 AI 서비스를 지원하지 않습니다. VPN을 사용 중이라면 해제하거나 한국 리전으로 접속해주세요.`;
-									} else if (lastError.includes("quota")) {
-										friendlyMessage = "일일 AI 사용 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.";
-									}
-				
-									return jsonResponse({ 
-										error: `Gemini API Error (${colo})`, 
-										message: friendlyMessage,
-										details: lastError
-									}, aiResponse.status);
-								}
+				const callGemini = async (modelName: string) => {
+					console.log(`Calling Gemini API with model: ${modelName}`);
+					const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
+					return await fetch(url, {
+						method: 'POST',
+						headers: { 
+							'Content-Type': 'application/json',
+							'x-goog-api-client': 'genai-js/0.21.0'
+						},
+						body: JSON.stringify({
+							contents: [
+								{ role: 'user', parts: [{ text: `시스템 지침: ${systemPrompt}\n\n사용자 질문: ${prompt}` }] }
+							],
+							generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+						})
+					});
+				};
+
+				const modelsToTry = [
+					'gemini-2.0-flash',
+					'gemini-2.0-flash-lite-preview-02-05',
+					'gemini-2.0-pro-exp-02-05',
+					'gemini-2.5-flash'
+				];
+				let lastError = "";
+				let aiResponse: any;
+				let aiData: any;
+
+				for (const model of modelsToTry) {
+					aiResponse = await callGemini(model);
+					aiData = await aiResponse.json();
+					if (aiResponse.ok) break;
+					lastError = aiData.error?.message || "Unknown error";
+					const isRetryable = lastError.toLowerCase().includes("location") || 
+					                    lastError.toLowerCase().includes("quota") || 
+					                    lastError.toLowerCase().includes("overloaded");
+					if (!isRetryable) break;
+				}
+
+				if (!aiResponse.ok) {
+					const colo = (request as any).cf?.colo || 'Unknown';
+					let friendlyMessage = "AI 응답을 가져오지 못했습니다.";
+					if (lastError.includes("location")) {
+						friendlyMessage = `현재 접속 지역(${colo})은 구글 AI 서비스를 지원하지 않습니다. VPN을 사용 중이라면 해제하거나 한국 리전으로 접속해주세요.`;
+					} else if (lastError.includes("quota")) {
+						friendlyMessage = "일일 AI 사용 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.";
+					}
+					return jsonResponse({ error: `Gemini API Error (${colo})`, message: friendlyMessage, details: lastError }, aiResponse.status);
+				}
+
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 				if (answer) {
 					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
@@ -324,7 +229,7 @@ export default {
 				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 
-				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").bind(decoded.userId).all();
+				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").all();
 				return jsonResponse(results);
 			}
 
@@ -359,7 +264,6 @@ export default {
 				const nickname = userData.kakao_account?.profile?.nickname || 'User';
 				const email = userData.kakao_account?.email || null;
 
-				// SQL 파라미터 개수 명시적 일치 (6개 ? -> 6개 bind)
 				const now = new Date().toISOString();
 				await env.DB.prepare(`
 					INSERT INTO User (kakaoId, nickname, email, isAdmin, createdAt, updatedAt) 
@@ -372,14 +276,13 @@ export default {
 
 				const user: any = await env.DB.prepare("SELECT id FROM User WHERE kakaoId = ?").bind(kakaoId).first();
 				
-				// 로그인 히스토리 기록
 				const region = (request as any).cf?.region || (request as any).cf?.country || 'Unknown';
 				await env.DB.prepare("INSERT INTO LoginHistory (userId, region) VALUES (?, ?)").bind(user.id, region).run();
 
 				const { accessToken, refreshToken } = generateTokens(user.id);
 				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
 
-				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_FINAL`;
+				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_FINAL_3`;
 				return Response.redirect(redirectUrl, 302);
 			}
 
