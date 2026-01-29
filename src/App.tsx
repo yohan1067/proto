@@ -151,23 +151,30 @@ function App() {
     const profileTimeout = setTimeout(() => profileController.abort(), 20000);
 
     try {
+      console.log("Fetching user profile...");
       const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/user/me', {
         headers: { 'Authorization': `Bearer ${token}` },
         signal: profileController.signal
       });
       
       clearTimeout(profileTimeout);
-      if (response.ok) {
+      const contentType = response.headers.get("content-type");
+      
+      if (response.ok && contentType && contentType.includes("application/json")) {
         const userData = await response.json();
+        console.log("User profile fetched:", userData);
         setNickname(userData.nickname);
         localStorage.setItem('user_nickname', userData.nickname);
         setIsAdmin(!!userData.isAdmin);
         setIsLoggedIn(true);
       } else {
+        const errorText = await response.text();
+        console.error("Profile fetch failed:", response.status, errorText);
+        alert(`인증 실패 (Status: ${response.status}). 다시 로그인해주세요.`);
         handleLogout();
       }
     } catch (error: any) {
-      clearTimeout(profileTimeout);
+      console.error("Profile fetch exception:", error);
       handleLogout();
     } finally {
       setIsInitialLoading(false);
@@ -208,9 +215,10 @@ function App() {
       });
 
       clearTimeout(timeoutId);
-      const data = await response.json();
+      const contentType = response.headers.get("content-type");
 
-      if (response.ok) {
+      if (response.ok && contentType && contentType.includes("application/json")) {
+        const data = await response.json();
         const aiMsg: Message = {
           id: Date.now() + 1,
           text: data.answer || "No response text",
@@ -219,7 +227,13 @@ function App() {
         };
         setMessages(prev => [...prev, aiMsg]);
       } else {
-        const errorMsg = data.details?.error?.message || data.error || 'Unknown error occurred.';
+        const errorText = await response.text();
+        let errorMsg = `Server Error (${response.status})`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMsg = errorJson.error || errorMsg;
+        } catch (e) {}
+        
         const aiErrorMsg: Message = {
           id: Date.now() + 1,
           text: `[Error] ${errorMsg}`,

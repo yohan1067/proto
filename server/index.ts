@@ -27,42 +27,49 @@ export default {
 			return new Response(null, { headers: corsHeaders });
 		}
 
+		// 헬퍼: 항상 JSON 응답 반환
+		const jsonResponse = (data: any, status = 200) => {
+			return new Response(JSON.stringify(data), {
+				status,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			});
+		};
+
 		const generateTokens = (userId: number) => {
 			const accessToken = jwt.sign({ userId }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
 			const refreshToken = jwt.sign({ userId }, jwtSecret, { expiresIn: REFRESH_TOKEN_EXPIRY });
 			return { accessToken, refreshToken };
 		};
 
-		// 1. 토큰 갱신
-		if (url.pathname === '/api/auth/refresh' && request.method === 'POST') {
-			try {
+		try {
+			// 0. 상태 점검용
+			if (url.pathname === '/api/health') {
+				return jsonResponse({ status: 'ok', time: new Date().toISOString() });
+			}
+
+			// 1. 토큰 갱신
+			if (url.pathname === '/api/auth/refresh' && request.method === 'POST') {
 				const { refreshToken } = await request.json() as any;
-				if (!refreshToken) return new Response('Missing refresh token', { status: 400, headers: corsHeaders });
+				if (!refreshToken) return jsonResponse({ error: 'Missing refresh token' }, 400);
 
 				const decoded = jwt.verify(refreshToken, jwtSecret) as any;
 				const user = await env.DB.prepare("SELECT * FROM User WHERE id = ?").bind(decoded.userId).first();
 
 				if (!user || user.refreshToken !== refreshToken) {
-					return new Response('Invalid refresh token', { status: 401, headers: corsHeaders });
+					return jsonResponse({ error: 'Invalid refresh token' }, 401);
 				}
 
 				const tokens = generateTokens(user.id as number);
 				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(tokens.refreshToken, user.id).run();
 
-				return new Response(JSON.stringify(tokens), {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				});
-			} catch (e) {
-				return new Response('Token refresh failed', { status: 401, headers: corsHeaders });
+				return jsonResponse(tokens);
 			}
-		}
 
-		// 2. 내 정보 가져오기
-		if (url.pathname === '/api/user/me' && request.method === 'GET') {
-			try {
+			// 2. 내 정보 가져오기
+			if (url.pathname === '/api/user/me' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
 				if (!authHeader || !authHeader.startsWith('Bearer ')) {
-					return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+					return jsonResponse({ error: 'Unauthorized' }, 401);
 				}
 				const token = authHeader.split(' ')[1];
 				const decoded = jwt.verify(token, jwtSecret) as any;
@@ -71,24 +78,15 @@ export default {
 				const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Database timeout")), 15000));
 				const user = await Promise.race([userPromise, timeoutPromise]) as any;
 				
-				if (!user) return new Response('User not found', { status: 404, headers: corsHeaders });
-				return new Response(JSON.stringify(user), {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				});
-			} catch (e: any) {
-				return new Response(JSON.stringify({ error: e.message }), { 
-					status: e.message === "Database timeout" ? 504 : 401, 
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-				});
+				if (!user) return jsonResponse({ error: 'User not found' }, 404);
+				return jsonResponse(user);
 			}
-		}
 
-		// 2-2. 회원 탈퇴 API
-		if (url.pathname === '/api/user/withdraw' && request.method === 'DELETE') {
-			try {
+			// 2-2. 회원 탈퇴 API
+			if (url.pathname === '/api/user/withdraw' && request.method === 'DELETE') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
-				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				const userId = decoded.userId;
 
@@ -96,71 +94,51 @@ export default {
 				await env.DB.prepare("DELETE FROM LoginHistory WHERE userId = ?").bind(userId).run();
 				await env.DB.prepare("DELETE FROM User WHERE id = ?").bind(userId).run();
 
-				return new Response(JSON.stringify({ success: true }), {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				});
-			} catch (e) {
-				return new Response('Withdrawal failed', { status: 500, headers: corsHeaders });
+				return jsonResponse({ success: true });
 			}
-		}
 
-		// 2-3. [관리자] 회원 목록 조회 API
-		if (url.pathname === '/api/admin/users' && request.method === 'GET') {
-			try {
+			// 2-3. [관리자] 회원 목록 조회 API
+			if (url.pathname === '/api/admin/users' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
-				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				
 				const adminCheck = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
-				if (!adminCheck || !adminCheck.isAdmin) return new Response('Forbidden', { status: 403, headers: corsHeaders });
+				if (!adminCheck || !adminCheck.isAdmin) return jsonResponse({ error: 'Forbidden' }, 403);
 
 				const { results } = await env.DB.prepare("SELECT id, kakaoId, nickname, email, isAdmin, createdAt FROM User ORDER BY createdAt DESC").all();
-				return new Response(JSON.stringify(results), {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				});
-			} catch (e) {
-				return new Response('Error', { status: 500, headers: corsHeaders });
+				return jsonResponse(results);
 			}
-		}
 
-		// 2-1. 관리자 프롬프트 관리
-		if (url.pathname === '/api/admin/prompt') {
-			try {
+			// 2-1. 관리자 프롬프트 관리
+			if (url.pathname === '/api/admin/prompt') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
-				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				const user = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
 				
 				if (!user || !user.isAdmin) {
-					return new Response('Forbidden', { status: 403, headers: corsHeaders });
+					return jsonResponse({ error: 'Forbidden' }, 403);
 				}
 
 				if (request.method === 'GET') {
 					const config = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
-					return new Response(JSON.stringify({ prompt: config?.value || '너는 한국어로 코드 전문가야' }), {
-						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-					});
+					return jsonResponse({ prompt: config?.value || '너는 한국어로 코드 전문가야' });
 				}
 
 				if (request.method === 'POST') {
 					const { prompt } = await request.json() as any;
 					await env.DB.prepare("INSERT INTO SystemConfig (key, value) VALUES ('system_prompt', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(prompt).run();
-					return new Response(JSON.stringify({ success: true }), {
-						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-					});
+					return jsonResponse({ success: true });
 				}
-			} catch (e) {
-				return new Response('Error', { status: 500, headers: corsHeaders });
 			}
-		}
 
-		// 3. AI 질문
-		if (url.pathname === '/api/ai/ask' && request.method === 'POST') {
-			try {
+			// 3. AI 질문
+			if (url.pathname === '/api/ai/ask' && request.method === 'POST') {
 				const authHeader = request.headers.get('Authorization');
-				if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				if (!authHeader) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const token = authHeader.split(' ')[1];
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				const userId = decoded.userId;
@@ -181,55 +159,41 @@ export default {
 				});
 
 				const aiData: any = await aiResponse.json();
-				console.log("Gemini Raw Response:", JSON.stringify(aiData));
-
+				
 				if (!aiResponse.ok) {
-					return new Response(JSON.stringify({ error: aiData.error?.message || "Gemini API Error" }), { status: aiResponse.status, headers: corsHeaders });
+					return jsonResponse({ error: aiData.error?.message || "Gemini API Error" }, aiResponse.status);
 				}
 
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
 				if (answer) {
 					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
-					return new Response(JSON.stringify({ answer }), {
-						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-					});
+					return jsonResponse({ answer });
 				} else {
-					const reason = aiData.promptFeedback?.blockReason || "Unknown Reason (Safety Filter?)";
-					return new Response(JSON.stringify({ error: `AI 답변 생성 실패: ${reason}` }), { status: 500, headers: corsHeaders });
+					return jsonResponse({ error: 'AI 답변 생성 실패' }, 500);
 				}
-			} catch (e: any) {
-				return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
 			}
-		}
 
-		// 4. 대화 기록 조회
-		if (url.pathname === '/api/history' && request.method === 'GET') {
-			try {
+			// 4. 대화 기록 조회
+			if (url.pathname === '/api/history' && request.method === 'GET') {
 				const authHeader = request.headers.get('Authorization');
 				const token = authHeader?.split(' ')[1];
-				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				if (!token) return jsonResponse({ error: 'Unauthorized' }, 401);
 				const decoded = jwt.verify(token, jwtSecret) as any;
 
 				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").all();
-				return new Response(JSON.stringify(results), {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				});
-			} catch (e) {
-				return new Response('Error', { status: 500, headers: corsHeaders });
+				return jsonResponse(results);
 			}
-		}
 
-		// 5. 카카오 로그인 콜백
-		if (url.pathname === '/api/auth/kakao/callback') {
-			const code = url.searchParams.get('code');
-			if (!code) return new Response('Code missing', { status: 400, headers: corsHeaders });
+			// 5. 카카오 로그인 콜백
+			if (url.pathname === '/api/auth/kakao/callback') {
+				const code = url.searchParams.get('code');
+				if (!code) return new Response('Code missing', { status: 400, headers: corsHeaders });
 
-			try {
 				const KAKAO_ID = env.KAKAO_CLIENT_ID;
 				const REDIRECT_URI = 'https://proto-backend.yohan1067.workers.dev/api/auth/kakao/callback';
 
-				const tokenResponse = await fetch('https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}', {
+				const tokenResponse = await fetch('https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_ID}&redirect_uri=${REDIRECT_URI}', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
 					body: new URLSearchParams({
@@ -264,13 +228,15 @@ export default {
 				const { accessToken, refreshToken } = generateTokens(user.id);
 				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
 
-				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_VER_2`;
+				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=FINAL_SQL`;
 				return Response.redirect(redirectUrl, 302);
-			} catch (error: any) {
-				return new Response(error.message, { status: 500, headers: corsHeaders });
 			}
-		}
 
-		return new Response('Not Found', { status: 404, headers: corsHeaders });
+			return jsonResponse({ error: 'Not Found' }, 404);
+
+		} catch (e: any) {
+			console.error("Global Error:", e.message);
+			return jsonResponse({ error: e.message || 'Internal Server Error' }, 500);
+		}
 	},
 };
