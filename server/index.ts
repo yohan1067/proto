@@ -147,20 +147,39 @@ export default {
 
 				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
 				
-				                const callGemini = async (modelName: string) => {
-									console.log(`Calling Gemini API with model: ${modelName}`);
-									return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`, {
-										method: 'POST',
-										headers: { 'Content-Type': 'application/json' },
-										body: JSON.stringify({
-											system_instruction: { parts: [{ text: systemPrompt }] },
-											contents: [{ parts: [{ text: prompt }] }],
-											generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-										})
-									});
-								};
+				                				const callGemini = async (modelName: string) => {
 				
-								const modelsToTry = ['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash-001'];
+				                					console.log(`Calling Gemini API with model: ${modelName}`);
+				
+				                					// v1beta 대신 정식 v1 엔드포인트 사용 시도
+				
+				                					return await fetch(`https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`, {
+				
+				                						method: 'POST',
+				
+				                						headers: { 'Content-Type': 'application/json' },
+				
+				                						body: JSON.stringify({
+				
+				                							system_instruction: { parts: [{ text: systemPrompt }] },
+				
+				                							contents: [{ parts: [{ text: prompt }] }],
+				
+				                							generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+				
+				                						})
+				
+				                					});
+				
+				                				};
+				
+				                
+				
+				                				// 모델 리스트에서 gemini-2.0-flash-exp 추가 (지역 제한에 더 유연할 수 있음)
+				
+				                				const modelsToTry = ['gemini-2.0-flash-exp', 'gemini-2.0-flash-001', 'gemini-2.5-flash'];
+				
+				                
 								let lastError = "";
 								let aiResponse: any;
 								let aiData: any;
