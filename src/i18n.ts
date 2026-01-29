@@ -8,6 +8,8 @@ const resources = {
       "hero_title": "Ask Anything with AI",
       "hero_subtitle": "Your sophisticated companion for instant answers and creative insights.",
       "login_kakao": "Log in with Kakao",
+      "logging_in": "Logging in...",
+      "loading_profile": "Loading your profile...",
       "terms_prefix": "By continuing, you agree to our ",
       "terms": "Terms",
       "and": " and ",

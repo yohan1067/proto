@@ -18,6 +18,8 @@ interface ChatHistoryItem {
 function App() {
   const { t, i18n } = useTranslation();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [nickname, setNickname] = useState<string | null>(localStorage.getItem('user_nickname'));
   const [question, setQuestion] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -74,9 +76,14 @@ function App() {
         const userData = await response.json();
         setNickname(userData.nickname);
         localStorage.setItem('user_nickname', userData.nickname);
+        setIsLoggedIn(true);
+      } else {
+        handleLogout();
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
+    } finally {
+      setIsInitialLoading(false);
     }
   };
 
@@ -159,21 +166,23 @@ function App() {
     const refreshToken = params.get('refresh_token');
 
     if (accessToken && refreshToken) {
+      setIsLoggingIn(true);
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
-      setIsLoggedIn(true);
       fetchUserProfile(accessToken);
       window.history.replaceState({}, document.title, "/");
     } else {
       const token = localStorage.getItem('access_token');
       if (token) {
-        setIsLoggedIn(true);
         fetchUserProfile(token);
+      } else {
+        setIsInitialLoading(false);
       }
     }
   }, []);
 
   const handleKakaoLogin = () => {
+    setIsLoggingIn(true);
     const KAKAO_CLIENT_ID = '810bb035b44a77dbc46896dccb59432b';
     const KAKAO_REDIRECT_URI = 'https://proto-backend.yohan1067.workers.dev/api/auth/kakao/callback';
     const kakaoAuthURL = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_CLIENT_ID}&redirect_uri=${KAKAO_REDIRECT_URI}`;
@@ -196,6 +205,17 @@ function App() {
     item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background-dark">
+        <div className="relative w-32 h-32 rounded-full ai-orb-core animate-pulse-slow flex items-center justify-center shadow-[0_0_40px_rgba(19,91,236,0.3)]">
+          <span className="material-symbols-outlined text-white animate-spin">progress_activity</span>
+        </div>
+        <p className="mt-8 text-white/40 text-sm tracking-widest uppercase animate-pulse">{t('loading_profile')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-light dark:bg-background-dark text-white font-display">
@@ -455,10 +475,20 @@ function App() {
           <div className="pb-12 px-6 flex flex-col gap-4 z-10 max-w-md mx-auto w-full">
             <button 
               onClick={handleKakaoLogin}
-              className="flex min-w-full items-center justify-center rounded-2xl h-16 px-5 bg-kakao-yellow text-black gap-3 font-bold text-lg shadow-lg active:scale-95 transition-all duration-100"
+              disabled={isLoggingIn}
+              className="flex min-w-full items-center justify-center rounded-2xl h-16 px-5 bg-kakao-yellow text-black gap-3 font-bold text-lg shadow-lg active:scale-95 transition-all duration-100 disabled:opacity-70"
             >
-              <span className="material-symbols-outlined fill-1">chat_bubble</span>
-              <span className="truncate">{t('login_kakao')}</span>
+              {isLoggingIn ? (
+                <>
+                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                  <span className="truncate">{t('logging_in')}</span>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined fill-1">chat_bubble</span>
+                  <span className="truncate">{t('login_kakao')}</span>
+                </>
+              )}
             </button>
 
             <div className="flex gap-3 justify-center">
