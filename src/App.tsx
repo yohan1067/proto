@@ -313,9 +313,9 @@ function App() {
                 </div>
               </header>
 
-              <main className="flex-1 overflow-y-auto px-4 py-2 space-y-6 z-10 scroll-smooth no-scrollbar pb-32">
+              <main className="flex-1 overflow-y-auto px-4 py-2 space-y-6 z-10 scroll-smooth no-scrollbar pb-40">
                 {messages.length === 0 && (
-                   <div className="h-full flex flex-col items-center justify-center opacity-30 px-10 text-center">
+                   <div className="h-full flex flex-col items-center justify-center opacity-30 px-10 text-center py-20">
                       <span className="material-symbols-outlined text-6xl mb-4">chat_bubble</span>
                       <p className="text-lg">{t('help_label')}</p>
                    </div>
@@ -330,7 +330,7 @@ function App() {
                             navigator.clipboard.writeText(msg.text);
                             alert(t('copied'));
                           }}
-                          className="absolute -bottom-10 right-0 bg-white/5 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/50 hover:text-white"
+                          className="absolute -bottom-10 right-0 bg-white/5 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/50 hover:text-white z-30"
                         >
                           <span className="material-symbols-outlined text-sm">content_copy</span>
                           {t('copy')}
@@ -352,23 +352,24 @@ function App() {
                 <div ref={messagesEndRef} />
               </main>
 
-              <div className="fixed bottom-24 left-0 right-0 p-4 space-y-4 z-20">
+              <div className="fixed bottom-24 left-0 right-0 p-4 z-50 pointer-events-auto">
                 <form 
                   onSubmit={(e) => { e.preventDefault(); handleAskAi(); }}
-                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full"
+                  className="input-container flex items-center gap-3 p-2 pl-4 rounded-2xl max-w-2xl mx-auto w-full shadow-2xl bg-background-dark/50 backdrop-blur-xl"
                 >
                   <input 
                     ref={inputRef}
                     className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/30 py-2" 
                     placeholder={t('ask_placeholder')}
                     type="text"
+                    autoComplete="off"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                   />
                   <button 
                     type="submit"
-                    disabled={isLoadingAi}
-                    className="w-10 h-10 flex-shrink-0 rounded-xl bg-primary flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
+                    disabled={isLoadingAi || !question.trim()}
+                    className="w-10 h-10 flex-shrink-0 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30"
                   >
                     <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
                   </button>
