@@ -147,32 +147,53 @@ export default {
 
 				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
 				
-				const callGemini = async (modelName: string) => {
-					return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							system_instruction: { parts: [{ text: systemPrompt }] },
-							contents: [{ parts: [{ text: prompt }] }],
-							generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-						})
-					});
-				};
-
-				let aiResponse = await callGemini('gemini-2.5-flash');
-				let aiData: any = await aiResponse.json();
-
-				// 만약 리전 에러나 쿼터 에러 발생 시 2.0-flash로 한 번 더 시도
-				if (!aiResponse.ok && (aiData.error?.message?.includes("location") || aiData.error?.message?.includes("quota"))) {
-					console.log("Retrying with gemini-2.0-flash due to regional/quota issue...");
-					aiResponse = await callGemini('gemini-2.0-flash');
-					aiData = await aiResponse.json();
-				}
-				if (!aiResponse.ok) {
-					const colo = (request as any).cf?.colo || 'Unknown';
-					return jsonResponse({ error: `Gemini API Error (${colo}): ${aiData.error?.message}` }, aiResponse.status);
-				}
-
+				                const callGemini = async (modelName: string) => {
+									console.log(`Calling Gemini API with model: ${modelName}`);
+									return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`, {
+										method: 'POST',
+										headers: { 'Content-Type': 'application/json' },
+										body: JSON.stringify({
+											system_instruction: { parts: [{ text: systemPrompt }] },
+											contents: [{ parts: [{ text: prompt }] }],
+											generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+										})
+									});
+								};
+				
+								const modelsToTry = ['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.0-flash-001'];
+								let lastError = "";
+								let aiResponse: any;
+								let aiData: any;
+				
+								for (const model of modelsToTry) {
+									aiResponse = await callGemini(model);
+									aiData = await aiResponse.json();
+									
+									if (aiResponse.ok) break;
+									
+									lastError = aiData.error?.message || "Unknown error";
+									console.error(`Model ${model} failed: ${lastError}`);
+									
+									// 리전 에러나 쿼터 에러가 아니면(예: 문법 에러) 즉시 중단
+									if (!lastError.includes("location") && !lastError.includes("quota")) break;
+								}
+				
+								if (!aiResponse.ok) {
+									const colo = (request as any).cf?.colo || 'Unknown';
+									let friendlyMessage = "AI 응답을 가져오지 못했습니다.";
+									
+									if (lastError.includes("location")) {
+										friendlyMessage = `현재 접속 지역(${colo})은 구글 AI 서비스를 지원하지 않습니다. VPN을 사용 중이라면 해제하거나 한국 리전으로 접속해주세요.`;
+									} else if (lastError.includes("quota")) {
+										friendlyMessage = "일일 AI 사용 할당량을 초과했습니다. 잠시 후 다시 시도해주세요.";
+									}
+				
+									return jsonResponse({ 
+										error: `Gemini API Error (${colo})`, 
+										message: friendlyMessage,
+										details: lastError
+									}, aiResponse.status);
+								}
 				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 				if (answer) {
 					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
