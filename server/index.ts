@@ -146,17 +146,28 @@ export default {
 				const systemPrompt = config?.value || '너는 한국어로 코드 전문가야';
 
 				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
-				const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						system_instruction: { parts: [{ text: systemPrompt }] },
-						contents: [{ parts: [{ text: prompt }] }],
-						generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-					})
-				});
+				
+				const callGemini = async (modelName: string) => {
+					return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							system_instruction: { parts: [{ text: systemPrompt }] },
+							contents: [{ parts: [{ text: prompt }] }],
+							generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+						})
+					});
+				};
 
-				const aiData: any = await aiResponse.json();
+				let aiResponse = await callGemini('gemini-2.5-flash');
+				let aiData: any = await aiResponse.json();
+
+				// 만약 리전 에러나 쿼터 에러 발생 시 2.0-flash로 한 번 더 시도
+				if (!aiResponse.ok && (aiData.error?.message?.includes("location") || aiData.error?.message?.includes("quota"))) {
+					console.log("Retrying with gemini-2.0-flash due to regional/quota issue...");
+					aiResponse = await callGemini('gemini-2.0-flash');
+					aiData = await aiResponse.json();
+				}
 				if (!aiResponse.ok) {
 					const colo = (request as any).cf?.colo || 'Unknown';
 					return jsonResponse({ error: `Gemini API Error (${colo}): ${aiData.error?.message}` }, aiResponse.status);
