@@ -31,6 +31,7 @@ function App() {
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [showToast, setShowToast] = useState<boolean>(false);
   const [modalConfig, setModalConfig] = useState<{
     show: boolean;
     title: string;
@@ -62,6 +63,11 @@ function App() {
     setModalConfig({ show: true, title, message, type, onConfirm });
   };
 
+  const triggerToast = () => {
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -90,7 +96,7 @@ function App() {
   const fetchSystemPrompt = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await fetch(`https://proto-backend.yohan1067.workers.dev/api/admin/prompt?t=${Date.now()}`, {
+      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/admin/prompt', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -155,7 +161,7 @@ function App() {
       if (response.ok) {
         setNickname(newNickname.trim());
         localStorage.setItem('user_nickname', newNickname.trim());
-        showAlert(t('profile_settings'), "닉네임이 수정되었습니다.", 'success');
+        showAlert(t('profile_settings'), t('profile_save'), 'success');
       }
     } catch (error) {
       showAlert(t('profile_settings'), "닉네임 수정 중 오류가 발생했습니다.", 'error');
@@ -216,8 +222,12 @@ function App() {
         setIsAdmin(!!userData.isAdmin);
         setIsLoggedIn(true);
       } else {
-        console.error("Profile fetch failed:", response.status);
-        setShowAuthModal(true);
+        const errorText = await response.text();
+        if (errorText.includes("jwt expired")) {
+          setShowAuthModal(true);
+        } else {
+          handleLogout();
+        }
       }
     } catch (error: any) {
       clearTimeout(profileTimeout);
@@ -246,7 +256,7 @@ function App() {
     inputRef.current?.focus();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60초로 연장
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
       const token = localStorage.getItem('access_token');
@@ -274,6 +284,10 @@ function App() {
         setMessages(prev => [...prev, aiMsg]);
       } else {
         const errorText = await response.text();
+        if (errorText.includes("jwt expired")) {
+          setShowAuthModal(true);
+          return;
+        }
         let errorMsg = `Server Error (${response.status})`;
         try {
           const errorJson = JSON.parse(errorText);
@@ -292,7 +306,7 @@ function App() {
        clearTimeout(timeoutId);
        let errorText = 'Connection error occurred.';
        if (error.name === 'AbortError') {
-         errorText = '[Error] 요청 시간이 초과되었습니다 (30초).';
+         errorText = '[Error] 요청 시간이 초과되었습니다 (60초).';
        }
        const aiErrorMsg: Message = {
           id: Date.now() + 1,
@@ -375,6 +389,16 @@ function App() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-dark text-white font-display">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[110] animate-in slide-in-from-top-4 fade-in duration-300">
+          <div className="bg-primary px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 border border-white/20">
+            <span className="material-symbols-outlined text-sm">check_circle</span>
+            <span className="text-sm font-bold">{t('copied')}</span>
+          </div>
+        </div>
+      )}
+
       {/* Auth Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -484,7 +508,7 @@ function App() {
                             <button 
                               onClick={() => {
                                 navigator.clipboard.writeText(msg.text);
-                                showAlert("Success", t('copied'), 'success');
+                                triggerToast();
                               }}
                               className="absolute -bottom-10 right-0 bg-white/10 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/70 hover:text-white z-30"
                             >
