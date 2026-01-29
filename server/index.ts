@@ -65,7 +65,6 @@ export default {
 
 		// 2. 내 정보 가져오기 엔드포인트
 		if (url.pathname === '/api/user/me' && request.method === 'GET') {
-			// ... 기존 코드 유지 (생략하지 않고 전체 로직 포함)
 			try {
 				const authHeader = request.headers.get('Authorization');
 				if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -75,7 +74,7 @@ export default {
 				const decoded = jwt.verify(token, jwtSecret) as any;
 				const user = await prisma.user.findUnique({
 					where: { id: decoded.userId },
-					select: { id: true, nickname: true, email: true }
+					select: { id: true, nickname: true, email: true, isAdmin: true }
 				});
 				if (!user) return new Response('User not found', { status: 404, headers: corsHeaders });
 				return new Response(JSON.stringify(user), {
@@ -83,6 +82,42 @@ export default {
 				});
 			} catch (e) {
 				return new Response('Invalid token', { status: 401, headers: corsHeaders });
+			}
+		}
+
+		// 2-1. 관리자용 프롬프트 관리 API
+		if (url.pathname === '/api/admin/prompt') {
+			try {
+				const authHeader = request.headers.get('Authorization');
+				if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				const token = authHeader.split(' ')[1];
+				const decoded = jwt.verify(token, jwtSecret) as any;
+				const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+				
+				if (!user || !user.isAdmin) {
+					return new Response('Forbidden', { status: 403, headers: corsHeaders });
+				}
+
+				if (request.method === 'GET') {
+					const config = await prisma.systemConfig.findUnique({ where: { key: 'system_prompt' } });
+					return new Response(JSON.stringify({ prompt: config?.value || '너는 한국어로 코드 전문가야' }), {
+						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+					});
+				}
+
+				if (request.method === 'POST') {
+					const { prompt } = await request.json() as any;
+					await prisma.systemConfig.upsert({
+						where: { key: 'system_prompt' },
+						update: { value: prompt },
+						create: { key: 'system_prompt', value: prompt }
+					});
+					return new Response(JSON.stringify({ success: true }), {
+						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+					});
+				}
+			} catch (e) {
+				return new Response('Error', { status: 500, headers: corsHeaders });
 			}
 		}
 
@@ -99,17 +134,21 @@ export default {
 				                const { prompt } = await request.json() as any;
 				                const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
 				
+				                // DB에서 시스템 프롬프트 불러오기
+				                const systemConfig = await prisma.systemConfig.findUnique({ where: { key: 'system_prompt' } });
+				                const systemPrompt = systemConfig?.value || '너는 한국어로 코드 전문가야';
+
 				                // 서버 측 타임아웃 설정 (25초)
 				                const aiController = new AbortController();
 				                const aiTimeout = setTimeout(() => aiController.abort(), 25000);
 
-				                // Google Gemini API 호출 (최신 2.5-flash 모델 사용)
+				                // Google Gemini API 호출 (안정적인 2.0-flash 모델로 변경 테스트)
 				                const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
 				                    method: 'POST',
 				                    headers: { 'Content-Type': 'application/json' },
 				                    body: JSON.stringify({
 				                        system_instruction: {
-				                            parts: [{ text: '너는 한국어로 코드 전문가야' }]
+				                            parts: [{ text: systemPrompt }]
 				                        },
 				                        contents: [{ parts: [{ text: prompt }] }],
 				                        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
@@ -195,10 +234,13 @@ export default {
 				const kakaoAccount = userData.kakao_account || {};
 				const nickname = kakaoAccount.profile?.nickname || 'KakaoUser_' + kakaoId.toString().substring(0, 4);
 
+				// 특정 사용자(사용자님)를 관리자로 설정
+				const isAdmin = nickname === 'Preview User' || kakaoId === 123456789; // 나중에 실제 닉네임/ID로 교체 가능
+
 				const user = await prisma.user.upsert({
 					where: { kakaoId: BigInt(kakaoId) },
-					update: { nickname, email: kakaoAccount.email || null },
-					create: { kakaoId: BigInt(kakaoId), nickname, email: kakaoAccount.email || null },
+					update: { nickname, email: kakaoAccount.email || null, isAdmin },
+					create: { kakaoId: BigInt(kakaoId), nickname, email: kakaoAccount.email || null, isAdmin },
 				});
 
 				// 토큰 생성 및 저장

@@ -18,13 +18,15 @@ interface ChatHistoryItem {
 function App() {
   const { t, i18n } = useTranslation();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [nickname, setNickname] = useState<string | null>(localStorage.getItem('user_nickname'));
   const [question, setQuestion] = useState<string>('');
+  const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'chat' | 'history'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'history' | 'admin'>('chat');
   const [searchQuery, setSearchQuery] = useState('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,9 +57,46 @@ function App() {
     }
   };
 
+  const fetchSystemPrompt = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/admin/prompt', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSystemPrompt(data.prompt);
+      }
+    } catch (error) {
+      console.error('Failed to fetch system prompt:', error);
+    }
+  };
+
+  const handleSavePrompt = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('https://proto-backend.yohan1067.workers.dev/api/admin/prompt', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ prompt: systemPrompt })
+      });
+      if (response.ok) {
+        alert(t('prompt_saved'));
+      }
+    } catch (error) {
+      alert('Save failed');
+    }
+  };
+
   useEffect(() => {
     if (isLoggedIn && activeTab === 'history') {
       fetchChatHistory();
+    }
+    if (isLoggedIn && activeTab === 'admin') {
+      fetchSystemPrompt();
     }
   }, [isLoggedIn, activeTab]);
 
@@ -75,6 +114,7 @@ function App() {
         const userData = await response.json();
         setNickname(userData.nickname);
         localStorage.setItem('user_nickname', userData.nickname);
+        setIsAdmin(userData.isAdmin);
         setIsLoggedIn(true);
       } else {
         handleLogout();
@@ -193,6 +233,7 @@ function App() {
     setIsLoggedIn(false);
     setIsLoggingIn(false);
     setNickname(null);
+    setIsAdmin(false);
     setQuestion('');
     setMessages([]);
     setHistory([]);
@@ -302,7 +343,7 @@ function App() {
                 </form>
               </div>
             </>
-          ) : (
+          ) : activeTab === 'history' ? (
             <>
               <header className="pt-14 pb-4 px-6 sticky top-0 bg-background-dark/80 backdrop-blur-md z-20">
                 <div className="flex items-center justify-between mb-6">
@@ -365,6 +406,29 @@ function App() {
                 <span className="material-symbols-outlined text-white text-3xl">add</span>
               </button>
             </>
+          ) : (
+            <>
+              <header className="pt-14 pb-4 px-6 sticky top-0 bg-background-dark/80 backdrop-blur-md z-20">
+                <h1 className="text-2xl font-bold tracking-tight">{t('admin_title')}</h1>
+              </header>
+              <main className="flex-1 p-6 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white/50">{t('system_prompt_label')}</label>
+                  <textarea
+                    className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:ring-2 focus:ring-primary outline-none transition-all resize-none"
+                    rows={10}
+                    value={systemPrompt}
+                    onChange={(e) => setSystemPrompt(e.target.value)}
+                  />
+                  <button
+                    onClick={handleSavePrompt}
+                    className="w-full h-14 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg"
+                  >
+                    {t('save_prompt')}
+                  </button>
+                </div>
+              </main>
+            </>
           )}
 
           <nav className="fixed bottom-0 left-0 right-0 bg-background-dark/90 backdrop-blur-xl border-t border-white/5 px-8 pb-8 pt-4 z-30">
@@ -386,6 +450,15 @@ function App() {
                 </div>
                 <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_history')}</span>
               </button>
+              {isAdmin && (
+                <button 
+                  onClick={() => setActiveTab('admin')}
+                  className={`flex flex-col items-center gap-1 group ${activeTab === 'admin' ? 'text-primary' : 'text-white/40'}`}
+                >
+                  <span className={`material-symbols-outlined ${activeTab === 'admin' ? 'fill-1' : 'group-hover:text-white transition-colors'}`}>settings_suggest</span>
+                  <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_admin')}</span>
+                </button>
+              )}
               <button 
                 onClick={() => alert(t('coming_soon'))}
                 className="flex flex-col items-center gap-1 group text-white/40"
@@ -423,9 +496,9 @@ function App() {
               <h1 className="text-white tracking-tight text-4xl sm:text-5xl font-bold leading-tight px-4 pb-3 whitespace-pre-line">
                 {t('hero_title')}
               </h1>
-              <p className="text-white/50 text-base font-normal leading-relaxed px-8 max-w-md mx-auto">
+              <h2 className="text-white/50 text-base font-normal leading-relaxed px-8 max-w-md mx-auto">
                 {t('hero_subtitle')}
-              </p>
+              </h2>
             </div>
           </div>
 
@@ -457,7 +530,7 @@ function App() {
               </button>
             </div>
 
-            <p className="text-white/30 text-xs text-center font-normal leading-normal mt-4 px-8">
+            <div className="text-white/30 text-xs text-center font-normal leading-normal mt-4 px-8">
               {t('terms_prefix')}
               <button 
                 onClick={() => alert(t('terms_content'))}
@@ -472,7 +545,7 @@ function App() {
               >
                 {t('privacy')}
               </button>.
-            </p>
+            </div>
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background-dark to-transparent pointer-events-none"></div>
