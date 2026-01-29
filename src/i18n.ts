@@ -78,6 +78,8 @@ const resources = {
       "yesterday": "어제",
       "nav_chat": "채팅",
       "nav_history": "기록",
+      "nav_admin": "관리자",
+      "admin_title": "관리자 설정",
       "nav_explore": "탐색",
       "nav_profile": "프로필",
       "no_history": "아직 대화 기록이 없습니다.",
