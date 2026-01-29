@@ -1,5 +1,3 @@
-import { PrismaClient } from '@prisma/client';
-import { PrismaD1 } from '@prisma/adapter-d1';
 import jwt from 'jsonwebtoken';
 
 export interface Env {
@@ -13,18 +11,10 @@ export interface Env {
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
-let prisma: PrismaClient;
-
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
 		const jwtSecret = env.JWT_SECRET || 'fallback-secret-key-12345';
-
-		// Prisma 인스턴스 초기화 보장
-		if (!prisma) {
-			const adapter = new PrismaD1(env.DB);
-			prisma = new PrismaClient({ adapter });
-		}
 
 		const corsHeaders = {
 			'Access-Control-Allow-Origin': '*',
@@ -37,31 +27,27 @@ export default {
 			return new Response(null, { headers: corsHeaders });
 		}
 
-		// 토큰 발급 헬퍼 함수
 		const generateTokens = (userId: number) => {
 			const accessToken = jwt.sign({ userId }, jwtSecret, { expiresIn: ACCESS_TOKEN_EXPIRY });
 			const refreshToken = jwt.sign({ userId }, jwtSecret, { expiresIn: REFRESH_TOKEN_EXPIRY });
 			return { accessToken, refreshToken };
 		};
 
-		// 1. 토큰 갱신 엔드포인트
+		// 1. 토큰 갱신
 		if (url.pathname === '/api/auth/refresh' && request.method === 'POST') {
 			try {
 				const { refreshToken } = await request.json() as any;
 				if (!refreshToken) return new Response('Missing refresh token', { status: 400, headers: corsHeaders });
 
 				const decoded = jwt.verify(refreshToken, jwtSecret) as any;
-				const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+				const user = await env.DB.prepare("SELECT * FROM User WHERE id = ?").bind(decoded.userId).first();
 
 				if (!user || user.refreshToken !== refreshToken) {
 					return new Response('Invalid refresh token', { status: 401, headers: corsHeaders });
 				}
 
-				const tokens = generateTokens(user.id);
-				await prisma.user.update({
-					where: { id: user.id },
-					data: { refreshToken: tokens.refreshToken }
-				});
+				const tokens = generateTokens(user.id as number);
+				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(tokens.refreshToken, user.id).run();
 
 				return new Response(JSON.stringify(tokens), {
 					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -71,66 +57,42 @@ export default {
 			}
 		}
 
-		// 2. 내 정보 가져오기 엔드포인트
+		// 2. 내 정보 가져오기
 		if (url.pathname === '/api/user/me' && request.method === 'GET') {
-			console.log("[ME] Request received");
 			try {
 				const authHeader = request.headers.get('Authorization');
 				if (!authHeader || !authHeader.startsWith('Bearer ')) {
-					console.log("[ME] No auth header");
 					return new Response('Unauthorized', { status: 401, headers: corsHeaders });
 				}
 				const token = authHeader.split(' ')[1];
-				console.log("[ME] Verifying token...");
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				console.log("[ME] Token decoded, userId:", decoded.userId);
-
-				// DB 조회에 타임아웃 적용 (15초로 연장)
-				const userPromise = prisma.user.findUnique({
-					where: { id: decoded.userId },
-					select: { id: true, nickname: true, email: true, isAdmin: true }
-				});
 				
-				const timeoutPromise = new Promise((_, reject) => 
-					setTimeout(() => reject(new Error("Database timeout")), 15000)
-				);
-
-				console.log("[ME] Querying database...");
-				const user = await Promise.race([userPromise, timeoutPromise]) as any;
+				const user = await env.DB.prepare("SELECT id, nickname, email, isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
 				
-				if (!user) {
-					console.log("[ME] User not found in DB");
-					return new Response('User not found', { status: 404, headers: corsHeaders });
-				}
-				
-				console.log("[ME] Success, returning user data");
+				if (!user) return new Response('User not found', { status: 404, headers: corsHeaders });
 				return new Response(JSON.stringify(user), {
 					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 				});
-			} catch (e: any) {
-				console.error("[ME] Error occurred:", e.message);
-				return new Response(JSON.stringify({ error: e.message }), { 
-					status: e.message === "Database timeout" ? 504 : 401, 
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-				});
+			} catch (e) {
+				return new Response('Invalid token', { status: 401, headers: corsHeaders });
 			}
 		}
 
-		// 2-1. 관리자용 프롬프트 관리 API
+		// 2-1. 관리자 프롬프트 관리
 		if (url.pathname === '/api/admin/prompt') {
 			try {
 				const authHeader = request.headers.get('Authorization');
-				if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
-				const token = authHeader.split(' ')[1];
+				const token = authHeader?.split(' ')[1];
+				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
 				const decoded = jwt.verify(token, jwtSecret) as any;
-				const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+				const user = await env.DB.prepare("SELECT isAdmin FROM User WHERE id = ?").bind(decoded.userId).first();
 				
 				if (!user || !user.isAdmin) {
 					return new Response('Forbidden', { status: 403, headers: corsHeaders });
 				}
 
 				if (request.method === 'GET') {
-					const config = await prisma.systemConfig.findUnique({ where: { key: 'system_prompt' } });
+					const config = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
 					return new Response(JSON.stringify({ prompt: config?.value || '너는 한국어로 코드 전문가야' }), {
 						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 					});
@@ -138,11 +100,7 @@ export default {
 
 				if (request.method === 'POST') {
 					const { prompt } = await request.json() as any;
-					await prisma.systemConfig.upsert({
-						where: { key: 'system_prompt' },
-						update: { value: prompt },
-						create: { key: 'system_prompt', value: prompt }
-					});
+					await env.DB.prepare("INSERT INTO SystemConfig (key, value) VALUES ('system_prompt', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(prompt).run();
 					return new Response(JSON.stringify({ success: true }), {
 						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 					});
@@ -152,84 +110,60 @@ export default {
 			}
 		}
 
-		// 3. 제미나이 AI 질문 엔드포인트
+		// 3. AI 질문
 		if (url.pathname === '/api/ai/ask' && request.method === 'POST') {
 			try {
 				const authHeader = request.headers.get('Authorization');
 				if (!authHeader) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				const token = authHeader.split(' ')[1];
+				const decoded = jwt.verify(token, jwtSecret) as any;
+				const userId = decoded.userId;
+				const { prompt } = await request.json() as any;
 
-				                const token = authHeader.split(' ')[1];
-				                const decoded = jwt.verify(token, jwtSecret) as any;
-				                const userId = decoded.userId;
-				
-				                const { prompt } = await request.json() as any;
-				                const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
-				
-				                // DB에서 시스템 프롬프트 불러오기
-				                const systemConfig = await prisma.systemConfig.findUnique({ where: { key: 'system_prompt' } });
-				                const systemPrompt = systemConfig?.value || '너는 한국어로 코드 전문가야';
+				const config = await env.DB.prepare("SELECT value FROM SystemConfig WHERE key = 'system_prompt'").first();
+				const systemPrompt = config?.value || '너는 한국어로 코드 전문가야';
 
-				                // 서버 측 타임아웃 설정 (25초)
-				                const aiController = new AbortController();
-				                const aiTimeout = setTimeout(() => aiController.abort(), 25000);
+				const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
+				const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						system_instruction: { parts: [{ text: systemPrompt }] },
+						contents: [{ parts: [{ text: prompt }] }],
+						generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+					})
+				});
 
-				                // Google Gemini API 호출 (안정적인 2.0-flash 모델로 변경 테스트)
-				                const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-				                    method: 'POST',
-				                    headers: { 'Content-Type': 'application/json' },
-				                    body: JSON.stringify({
-				                        system_instruction: {
-				                            parts: [{ text: systemPrompt }]
-				                        },
-				                        contents: [{ parts: [{ text: prompt }] }],
-				                        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-				                    }),
-				                    signal: aiController.signal
-				                });
-				
-				                clearTimeout(aiTimeout);
-				                const aiData: any = await aiResponse.json();
-				                
-				                if (!aiResponse.ok) {
-				                    console.error('Gemini API Error:', aiData);
-				                    return new Response(JSON.stringify({
-				                        error: 'Gemini API Error',
-				                        message: aiData.error?.message,
-				                        details: aiData
-				                    }), {
-				                        status: aiResponse.status,
-				                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-				                    });
-				                }
-				
-				                const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
-				
-				                // 3-1. 채팅 히스토리 저장
-				                if (answer) {
-				                    await prisma.chatHistory.create({
-				                        data: {
-				                            userId: userId,
-				                            question: prompt,
-				                            answer: answer
-				                        }
-				                    });
-				                }
-				
-				                return new Response(JSON.stringify({ answer }), {
-				                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				                });			} catch (e: any) {
-				return new Response(JSON.stringify({ error: e.message }), { status: 401, headers: corsHeaders });
+				const aiData: any = await aiResponse.json();
+				const answer = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+				if (answer) {
+					await env.DB.prepare("INSERT INTO ChatHistory (userId, question, answer) VALUES (?, ?, ?)").bind(userId, prompt, answer).run();
+				}
+
+				return new Response(JSON.stringify({ answer }), {
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				});
+			} catch (e: any) {
+				return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
 			}
 		}
 
-		// 4. 사용 가능한 모델 목록 확인 (디버깅용)
-		if (url.pathname === '/api/ai/models' && request.method === 'GET') {
-			const GEMINI_API_KEY = (env.GEMINI_API_KEY || '').trim();
-			const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
-			const data = await res.json();
-			return new Response(JSON.stringify(data), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-			});
+		// 4. 대화 기록 조회
+		if (url.pathname === '/api/history' && request.method === 'GET') {
+			try {
+				const authHeader = request.headers.get('Authorization');
+				const token = authHeader?.split(' ')[1];
+				if (!token) return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+				const decoded = jwt.verify(token, jwtSecret) as any;
+
+				const { results } = await env.DB.prepare("SELECT * FROM ChatHistory WHERE userId = ? ORDER BY createdAt DESC").bind(decoded.userId).all();
+				return new Response(JSON.stringify(results), {
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				});
+			} catch (e) {
+				return new Response('Error', { status: 500, headers: corsHeaders });
+			}
 		}
 
 		// 5. 카카오 로그인 콜백
@@ -254,37 +188,31 @@ export default {
 				});
 
 				const tokenData: any = await tokenResponse.json();
-				if (!tokenResponse.ok) return new Response(JSON.stringify(tokenData), { status: 401, headers: corsHeaders });
-
 				const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
 					headers: { Authorization: `Bearer ${tokenData.access_token}` },
 				});
 
 				const userData: any = await userResponse.json();
 				const kakaoId = userData.id;
-				const kakaoAccount = userData.kakao_account || {};
-				const nickname = kakaoAccount.profile?.nickname || 'KakaoUser_' + kakaoId.toString().substring(0, 4);
+				const nickname = userData.kakao_account?.profile?.nickname || 'User';
+				const email = userData.kakao_account?.email || null;
 
-				// "최요한" 님을 관리자로 설정
-				const isAdmin = nickname === '최요한';
+				// 직접 SQL로 Upsert 구현
+				await env.DB.prepare(`
+					INSERT INTO User (kakaoId, nickname, email, isAdmin, updatedAt) 
+					VALUES (?, ?, ?, ?, DATETIME('now'))
+					ON CONFLICT(kakaoId) DO UPDATE SET 
+						nickname = excluded.nickname, 
+						email = excluded.email,
+						updatedAt = DATETIME('now')
+				`).bind(kakaoId, nickname, email, nickname === '최요한' ? 1 : 0).run();
 
-				const user = await prisma.user.upsert({
-					where: { kakaoId: BigInt(kakaoId) },
-					update: { nickname, email: kakaoAccount.email || null, isAdmin },
-					create: { kakaoId: BigInt(kakaoId), nickname, email: kakaoAccount.email || null, isAdmin },
-				});
-
-				// 토큰 생성 및 저장
+				const user: any = await env.DB.prepare("SELECT id FROM User WHERE kakaoId = ?").bind(kakaoId).first();
 				const { accessToken, refreshToken } = generateTokens(user.id);
-				await prisma.user.update({
-					where: { id: user.id },
-					data: { refreshToken }
-				});
+				await env.DB.prepare("UPDATE User SET refreshToken = ? WHERE id = ?").bind(refreshToken, user.id).run();
 
-				                // 인증 성공 후 프론트엔드로 리다이렉트 (임시 토큰 포함, 캐시 방지 파라미터 추가)
-				                const frontendUrl = 'https://proto-9ff.pages.dev';
-				                const redirectUrl = `${frontendUrl}/?access_token=${accessToken}&refresh_token=${refreshToken}&v=FINAL`;
-				                return Response.redirect(redirectUrl, 302);
+				const redirectUrl = `https://proto-9ff.pages.dev/?access_token=${accessToken}&refresh_token=${refreshToken}&v=SQL_VER`;
+				return Response.redirect(redirectUrl, 302);
 			} catch (error: any) {
 				return new Response(error.message, { status: 500, headers: corsHeaders });
 			}
