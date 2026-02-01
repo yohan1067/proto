@@ -140,7 +140,6 @@ function App() {
 
   // Auth & Profile Listener
   useEffect(() => {
-    console.log("App Version: 2026-02-01v2 (Supabase Native Auth)");
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) fetchProfile(session.user.id);
