@@ -6,8 +6,8 @@ React + TypeScript + Vite 기반의 현대적인 AI 채팅 애플리케이션입
 ## Tech Stack
 - **Frontend**: React 19, Tailwind CSS v4, i18next, Material Symbols
 - **Backend**: Cloudflare Workers (Native D1 SQL)
-- **Database**: Cloudflare D1
-- **Auth**: Kakao OAuth 2.0, JWT (Access/Refresh Tokens)
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth (Kakao OAuth 2.0)
 - **AI**: OpenRouter AI (Gemini 2.0 Flash, Llama 3.3, Gemma 3 등 다중 모델 폴백)
 
 ## Implemented Features
@@ -26,8 +26,8 @@ React + TypeScript + Vite 기반의 현대적인 AI 채팅 애플리케이션입
 - **Admin**: 실시간 시스템 프롬프트 수정 및 전체 회원 목록 조회 (USER/ADMIN 구분).
 
 ### 3. Reliability & Security
-- **Infrastructure**: Prisma 제거 후 Native SQL 전환으로 속도 최적화.
-- **Security**: 모든 API 키(OpenRouter, Kakao, JWT)를 Cloudflare Secrets로 암호화 관리.
+- **Infrastructure**: Prisma 제거 후 Supabase SDK 직접 연동으로 전환하여 속도 최적화.
+- **Security**: API 키(OpenRouter, Supabase)를 Cloudflare Secrets 및 환경 변수로 관리.
 - **Robustness**: 비정상 응답 시 HTML 대신 항상 JSON 반환하도록 설계.
 
 ## Deployment Information

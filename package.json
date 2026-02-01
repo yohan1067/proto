@@ -13,6 +13,7 @@
   "dependencies": {
     "@prisma/adapter-d1": "^7.3.0",
     "@prisma/client": "^6.19.2",
+    "@supabase/supabase-js": "^2.93.3",
     "axios": "^1.13.4",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",

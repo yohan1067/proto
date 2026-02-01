@@ -3,13 +3,6 @@ main = "server/index.ts"
 compatibility_date = "2025-01-28"
 compatibility_flags = [ "nodejs_compat" ]
 
-[[d1_databases]]
-binding = "DB"
-database_name = "proto"
-database_id = "db9514c1-ae6c-46df-998e-68462b11a397"
-
-pages_build_output_dir = "dist"
-
 [vars]
-# Public environment variables go here
-# Sensitive keys are managed via Cloudflare Workers Secrets
+SUPABASE_URL = "https://mrkxepxtcsxyimlnosgm.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_HjrrnOsAmZB45Q1gtmKa5Q_mEVQVhTW"
