@@ -3,8 +3,9 @@
 ## **CRITICAL: Stability & Maintenance Protocol**
 **This is an existing, stable project.** The AI agent must adhere to the following rules:
 
-1.  **Language Policy:** **ALWAYS respond in Korean.** This applies to both the development agent's communication and the system prompts provided to the application's AI models. Ensure the AI in the app is instructed to speak Korean regardless of the model being used.
-2.  **Git-Based Workflow ONLY:** **NEVER** use manual deployment commands (e.g., `wrangler deploy`, `npx wrangler pages deploy`). The user relies on a Git-based CI/CD pipeline targeting the **`proto-9ff`** project. Any manual deployment creates duplicate projects and breaks the workflow.
+1.  **Autonomous Execution:** The user has granted **FULL AUTHORITY** to the AI. Do NOT ask for permission before executing tasks. Analyze, plan, and act immediately.
+2.  **Language Policy:** **ALWAYS respond in Korean.** This applies to both the development agent's communication and the system prompts provided to the application's AI models. Ensure the AI in the app is instructed to speak Korean regardless of the model being used.
+3.  **Git-Based Workflow ONLY:** **NEVER** use manual deployment commands (e.g., `wrangler deploy`, `npx wrangler pages deploy`). The user relies on a Git-based CI/CD pipeline targeting the **`proto-9ff`** project. Any manual deployment creates duplicate projects and breaks the workflow.
 2.  **Refactoring is Allowed:** You are encouraged to remove unused code (e.g., Prisma if not used) or optimize existing logic.
 3.  **Minimal Invasive Changes:** When adding features, modify **only** the necessary parts. Do NOT rewrite entire files from templates.
 4.  **Environment Awareness:** Use `import.meta.env` for frontend variables and respect the existing `.env` structure.
