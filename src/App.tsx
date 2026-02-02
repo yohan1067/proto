@@ -1,6 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Message } from './types';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import ChatHeader from './components/ChatHeader';
@@ -8,229 +7,34 @@ import HistoryTab from './components/HistoryTab';
 import ProfileTab from './components/ProfileTab';
 import AdminTab from './components/AdminTab';
 import LoginScreen from './components/LoginScreen';
+import AlertModal from './components/AlertModal';
+import AuthModal from './components/AuthModal';
 import { useAuthStore } from './store/useAuthStore';
 import { useUIStore } from './store/useUIStore';
 import { useChatStore } from './store/useChatStore';
-import { supabase } from './lib/supabase';
-
-const BACKEND_URL = 'https://proto-backend.yohan1067.workers.dev';
+import { useAuthInit } from './hooks/useAuthInit';
+import { useChat } from './hooks/useChat';
 
 function App() {
   const { t } = useTranslation();
-  const { 
-    session, isAdmin, isInitialLoading,
-    setSession, setIsAdmin, setNickname, setIsInitialLoading 
-  } = useAuthStore();
-  const { 
-    activeTab, setActiveTab, showAuthModal, setShowAuthModal,
-    showToast, setShowToast, modalConfig, setModalConfig
-  } = useUIStore();
-    const { 
-      question, messages, isLoadingAi, 
-      setQuestion, setMessages, setIsLoadingAi, appendMessageContent 
-    } = useChatStore();
-    
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
   
-    const scrollToBottom = () => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-  
-    useEffect(() => {
-      if (activeTab === 'chat') {
-        scrollToBottom();
-      }
-    }, [messages, isLoadingAi, activeTab]);
-  
-    const fetchProfile = async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('nickname, is_admin')
-          .eq('id', userId)
-          .single();
-        
-        if (data) {
-          setNickname(data.nickname);
-          setIsAdmin(data.is_admin);
-          localStorage.setItem('user_nickname', data.nickname);
-        } else if (error) {
-            if (error.code === 'PGRST116') {
-               console.log("Profile missing, creating new profile...");
-               const { data: { user } } = await supabase.auth.getUser();
-               if (user) {
-                   const meta = user.user_metadata;
-                   const newNicknameStr = meta?.full_name || meta?.nickname || 'User';
-                   
-                   const { error: insertError } = await supabase
-                     .from('users')
-                     .insert({ 
-                         id: userId, 
-                         email: user.email,
-                         nickname: newNicknameStr,
-                         is_admin: false 
-                     });
-                   
-                   if (!insertError) {
-                       setNickname(newNicknameStr);
-                       setIsAdmin(false);
-                       localStorage.setItem('user_nickname', newNicknameStr);
-                   } else {
-                       console.error("Failed to create profile:", insertError);
-                   }
-               }
-            } else {
-               console.error("Profile fetch error:", error);
-            }
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      } finally {
-        setIsInitialLoading(false);
-      }
-    };
-  
-    useEffect(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        if (session) fetchProfile(session.user.id);
-        else setIsInitialLoading(false);
-      });
-  
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        if (session) fetchProfile(session.user.id);
-        else {
-          setNickname(null);
-          setIsAdmin(false);
-          setIsInitialLoading(false);
-        }
-      });
-  
-      return () => subscription.unsubscribe();
-    }, []);
-  
-    const triggerToast = () => {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
-    };
-  
-    const handleAskAi = async (customPrompt?: string) => {
-      const prompt = customPrompt || question;
-      if (!prompt.trim()) return;
-  
-      // 1. Add User Message
-      const userMsg: Message = {
-        id: Date.now(),
-        text: prompt,
-        sender: 'user',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages((prev) => [...prev, userMsg]);
-      setQuestion('');
-      setIsLoadingAi(true);
-      setActiveTab('chat');
-      
-      // 2. Add Empty AI Message Placeholder
-      const aiMsgId = Date.now() + 1;
-      const aiMsg: Message = {
-        id: aiMsgId,
-        text: '', // Start empty for streaming
-        sender: 'ai',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-  
-      inputRef.current?.focus();
-  
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
-  
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        const token = currentSession?.access_token;
-  
-        if (!token) {
-            setShowAuthModal(true);
-            setIsLoadingAi(false);
-            return;
-        }
-  
-        const response = await fetch(`${BACKEND_URL}/api/ai/ask`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ prompt: prompt }),
-          signal: controller.signal
-        });
-  
-        clearTimeout(timeoutId);
-  
-              if (!response.ok || !response.body) {
-                throw new Error(`Server Error (${response.status})`);
-              }
-        
-              const reader = response.body.getReader();
-              const decoder = new TextDecoder();
-              let buffer = '';
-        
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-        
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-        
-                        for (const line of lines) {
-                          const trimmedLine = line.trim();
-                          // Skip empty lines or keep-alive comments
-                          if (!trimmedLine || trimmedLine.startsWith(':')) continue;
-                          
-                          // Allow loose matching for "data:"
-                          const dataIndex = trimmedLine.indexOf('data: ');
-                          if (dataIndex === -1) continue;
-                          
-                          const dataStr = trimmedLine.slice(dataIndex + 6);
-                          if (dataStr === '[DONE]') continue;
-                          
-                          try {
-                            const json = JSON.parse(dataStr);
-                            // OpenRouter/OpenAI format: choices[0].delta.content
-                            const content = json.choices?.[0]?.delta?.content || "";
-                            if (content) {
-                              appendMessageContent(aiMsgId, content);
-                            }
-                          } catch (e) {
-                            console.warn("Stream parse error for line:", trimmedLine, e);
-                          }
-                        }
-                      }        
-            } catch (error: unknown) {         clearTimeout(timeoutId);
-         let errorText = 'Connection error occurred.';
-         if (error instanceof Error) {
-           if (error.name === 'AbortError') {
-             errorText = '[Error] 요청 시간이 초과되었습니다 (60초).';
-           } else {
-             errorText = `[Error] ${error.message}`;
-           }
-         }
-         // Replace the empty message with error
-         setMessages((prev) => prev.map(msg => 
-           msg.id === aiMsgId ? { ...msg, text: errorText } : msg
-         ));
-          } finally {
-            setIsLoadingAi(false);
-            inputRef.current?.focus();
-          }
-        };
-      
-        const handleAuthModalConfirm = () => {
-          setShowAuthModal(false);
-        };
+  // 1. Initialize Auth
+  useAuthInit();
+
+  // 2. Chat Logic Hook
+  const { messagesEndRef, inputRef, scrollToBottom, copyToClipboard, handleAskAi } = useChat();
+
+  // 3. Global State
+  const { session, isAdmin, isInitialLoading } = useAuthStore();
+  const { activeTab, setActiveTab, showToast } = useUIStore();
+  const { question, setQuestion, messages, isLoadingAi } = useChatStore();
+
+  // Auto-scroll on new messages or tab change
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      scrollToBottom();
+    }
+  }, [messages, isLoadingAi, activeTab, scrollToBottom]);
 
   if (isInitialLoading) {
     return (
@@ -255,67 +59,11 @@ function App() {
         </div>
       )}
 
-      {/* Auth Modal */}
-      {showAuthModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
-              <span className="material-symbols-outlined text-red-500 text-3xl">lock_open</span>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">{t('auth_modal_title')}</h3>
-              <p className="text-sm text-white/50 leading-relaxed">
-                {t('auth_modal_message')}
-              </p>
-            </div>
-            <button 
-              onClick={handleAuthModalConfirm}
-              className="w-full h-14 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
-            >
-              {t('auth_modal_button')}
-            </button>
-          </div>
-        </div>
-      )}
+      <AuthModal />
+      <AlertModal />
 
-            {/* Universal Alert Modal */}
-            {modalConfig.show && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6">
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
-                    modalConfig.type === 'success' ? 'bg-green-500/10 border border-green-500/20' :
-                    modalConfig.type === 'error' ? 'bg-red-500/10 border border-red-500/20' :
-                    'bg-primary/10 border border-primary/20'
-                  }`}>
-                    <span className={`material-symbols-outlined text-3xl ${
-                      modalConfig.type === 'success' ? 'text-green-500' :
-                      modalConfig.type === 'error' ? 'text-red-500' :
-                      'text-primary'
-                    }`}>
-                      {modalConfig.type === 'success' ? 'check_circle' : 
-                       modalConfig.type === 'error' ? 'error' : 'info'}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-white">{modalConfig.title}</h3>
-                    <p className="text-sm text-white/50 leading-relaxed break-words whitespace-pre-wrap">
-                      {modalConfig.message}
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setModalConfig({ ...modalConfig, show: false });
-                      if (modalConfig.onConfirm) modalConfig.onConfirm();
-                    }}
-                    className="w-full h-14 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-white/10 transition-all active:scale-95"
-                  >
-                    OK
-                  </button>
-                </div>
-              </div>
-            )}
-      
-            {session ? (        <div className="relative flex h-screen w-full flex-col bg-gradient-mesh overflow-hidden mx-auto max-w-3xl shadow-2xl border-x border-white/5">
+      {session ? (
+        <div className="relative flex h-screen w-full flex-col bg-gradient-mesh overflow-hidden mx-auto max-w-3xl shadow-2xl border-x border-white/5">
           {activeTab === 'chat' ? (
             <>
               <ChatHeader />
@@ -333,7 +81,7 @@ function App() {
                         key={msg.id} 
                         msg={msg} 
                         t={t} 
-                        triggerToast={triggerToast} 
+                        copyToClipboard={copyToClipboard} 
                       />
                     ))}
                     <div ref={messagesEndRef} />

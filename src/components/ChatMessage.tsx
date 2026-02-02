@@ -6,10 +6,10 @@ import type { Message } from '../types';
 interface ChatMessageProps {
   msg: Message;
   t: (key: string) => string;
-  triggerToast: () => void;
+  copyToClipboard: (text: string) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, triggerToast }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, copyToClipboard }) => {
   return (
     <div className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
       <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full whitespace-pre-wrap`}>
@@ -45,10 +45,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, triggerToast }) => {
         )}
         {msg.sender === 'ai' && msg.text && (
           <button 
-            onClick={() => {
-              navigator.clipboard.writeText(msg.text);
-              triggerToast();
-            }}
+            onClick={() => copyToClipboard(msg.text)}
             className="absolute -bottom-10 right-0 bg-white/10 border border-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] text-white/70 hover:text-white z-30"
           >
             <span className="material-symbols-outlined text-sm">content_copy</span>
