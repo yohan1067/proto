@@ -16,7 +16,7 @@ interface ChatState {
   setSearchQuery: (query: string) => void;
   setSystemPrompt: (prompt: string) => void;
   resetChat: () => void;
-  updateLastMessage: (content: string) => void;
+  appendMessageContent: (id: number, content: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -42,12 +42,9 @@ export const useChatStore = create<ChatState>((set) => ({
     isLoadingAi: false,
     searchQuery: '' 
   }),
-  updateLastMessage: (content) => set((state) => {
-    const newMessages = [...state.messages];
-    if (newMessages.length > 0) {
-      const lastMsg = newMessages[newMessages.length - 1];
-      newMessages[newMessages.length - 1] = { ...lastMsg, text: lastMsg.text + content };
-    }
-    return { messages: newMessages };
-  }),
+  appendMessageContent: (id, content) => set((state) => ({
+    messages: state.messages.map((msg) => 
+      msg.id === id ? { ...msg, text: msg.text + content } : msg
+    )
+  })),
 }));

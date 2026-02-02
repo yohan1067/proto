@@ -25,202 +25,201 @@ function App() {
     activeTab, setActiveTab, showAuthModal, setShowAuthModal,
     showToast, setShowToast, modalConfig, setModalConfig
   } = useUIStore();
-  const { 
-    question, messages, isLoadingAi, 
-    setQuestion, setMessages, setIsLoadingAi, updateLastMessage 
-  } = useChatStore();
+    const { 
+      question, messages, isLoadingAi, 
+      setQuestion, setMessages, setIsLoadingAi, appendMessageContent 
+    } = useChatStore();
+    
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      scrollToBottom();
-    }
-  }, [messages, isLoadingAi, activeTab]);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('nickname, is_admin')
-        .eq('id', userId)
-        .single();
-      
-      if (data) {
-        setNickname(data.nickname);
-        setIsAdmin(data.is_admin);
-        localStorage.setItem('user_nickname', data.nickname);
-      } else if (error) {
-          if (error.code === 'PGRST116') {
-             console.log("Profile missing, creating new profile...");
-             const { data: { user } } = await supabase.auth.getUser();
-             if (user) {
-                 const meta = user.user_metadata;
-                 const newNicknameStr = meta?.full_name || meta?.nickname || 'User';
-                 
-                 const { error: insertError } = await supabase
-                   .from('users')
-                   .insert({
-                       id: userId, 
-                       email: user.email,
-                       nickname: newNicknameStr,
-                       is_admin: false 
-                   });
-                 
-                 if (!insertError) {
-                     setNickname(newNicknameStr);
-                     setIsAdmin(false);
-                     localStorage.setItem('user_nickname', newNicknameStr);
-                 } else {
-                     console.error("Failed to create profile:", insertError);
-                 }
-             }
-          } else {
-             console.error("Profile fetch error:", error);
-          }
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+  
+    useEffect(() => {
+      if (activeTab === 'chat') {
+        scrollToBottom();
       }
-    } catch (error) {
-      console.error('Failed to fetch profile:', error);
-    } finally {
-      setIsInitialLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setIsInitialLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else {
-        setNickname(null);
-        setIsAdmin(false);
+    }, [messages, isLoadingAi, activeTab]);
+  
+    const fetchProfile = async (userId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('nickname, is_admin')
+          .eq('id', userId)
+          .single();
+        
+        if (data) {
+          setNickname(data.nickname);
+          setIsAdmin(data.is_admin);
+          localStorage.setItem('user_nickname', data.nickname);
+        } else if (error) {
+            if (error.code === 'PGRST116') {
+               console.log("Profile missing, creating new profile...");
+               const { data: { user } } = await supabase.auth.getUser();
+               if (user) {
+                   const meta = user.user_metadata;
+                   const newNicknameStr = meta?.full_name || meta?.nickname || 'User';
+                   
+                   const { error: insertError } = await supabase
+                     .from('users')
+                     .insert({ 
+                         id: userId, 
+                         email: user.email,
+                         nickname: newNicknameStr,
+                         is_admin: false 
+                     });
+                   
+                   if (!insertError) {
+                       setNickname(newNicknameStr);
+                       setIsAdmin(false);
+                       localStorage.setItem('user_nickname', newNicknameStr);
+                   } else {
+                       console.error("Failed to create profile:", insertError);
+                   }
+               }
+            } else {
+               console.error("Profile fetch error:", error);
+            }
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      } finally {
         setIsInitialLoading(false);
       }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const triggerToast = () => {
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000);
-  };
-
-  const handleAskAi = async (customPrompt?: string) => {
-    const prompt = customPrompt || question;
-    if (!prompt.trim()) return;
-
-    // 1. Add User Message
-    const userMsg: Message = {
-      id: Date.now(),
-      text: prompt,
-      sender: 'user',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    setMessages((prev) => [...prev, userMsg]);
-    setQuestion('');
-    setIsLoadingAi(true);
-    setActiveTab('chat');
-    
-    // 2. Add Empty AI Message Placeholder
-    const aiMsgId = Date.now() + 1;
-    const aiMsg: Message = {
-      id: aiMsgId,
-      text: '', // Start empty for streaming
-      sender: 'ai',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages((prev) => [...prev, aiMsg]);
-
-    inputRef.current?.focus();
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-    try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      const token = currentSession?.access_token;
-
-      if (!token) {
-          setShowAuthModal(true);
-          setIsLoadingAi(false);
-          return;
-      }
-
-      const response = await fetch(`${BACKEND_URL}/api/ai/ask`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ prompt: prompt }),
-        signal: controller.signal
+  
+    useEffect(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        if (session) fetchProfile(session.user.id);
+        else setIsInitialLoading(false);
       });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok || !response.body) {
-        throw new Error(`Server Error (${response.status})`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6);
-            if (dataStr === '[DONE]') continue;
-            
-            try {
-              const json = JSON.parse(dataStr);
-              const content = json.choices?.[0]?.delta?.content || "";
-              if (content) {
-                updateLastMessage(content);
+  
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+        if (session) fetchProfile(session.user.id);
+        else {
+          setNickname(null);
+          setIsAdmin(false);
+          setIsInitialLoading(false);
+        }
+      });
+  
+      return () => subscription.unsubscribe();
+    }, []);
+  
+    const triggerToast = () => {
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    };
+  
+    const handleAskAi = async (customPrompt?: string) => {
+      const prompt = customPrompt || question;
+      if (!prompt.trim()) return;
+  
+      // 1. Add User Message
+      const userMsg: Message = {
+        id: Date.now(),
+        text: prompt,
+        sender: 'user',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setQuestion('');
+      setIsLoadingAi(true);
+      setActiveTab('chat');
+      
+      // 2. Add Empty AI Message Placeholder
+      const aiMsgId = Date.now() + 1;
+      const aiMsg: Message = {
+        id: aiMsgId,
+        text: '', // Start empty for streaming
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+  
+      inputRef.current?.focus();
+  
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+  
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const token = currentSession?.access_token;
+  
+        if (!token) {
+            setShowAuthModal(true);
+            setIsLoadingAi(false);
+            return;
+        }
+  
+        const response = await fetch(`${BACKEND_URL}/api/ai/ask`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ prompt: prompt }),
+          signal: controller.signal
+        });
+  
+        clearTimeout(timeoutId);
+  
+        if (!response.ok || !response.body) {
+          throw new Error(`Server Error (${response.status})`);
+        }
+  
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+  
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+  
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const dataStr = line.slice(6);
+              if (dataStr === '[DONE]') continue;
+              
+              try {
+                const json = JSON.parse(dataStr);
+                const content = json.choices?.[0]?.delta?.content || "";
+                if (content) {
+                  appendMessageContent(aiMsgId, content);
+                }
+              } catch {
+                // Ignore parse errors
               }
-            } catch {
-              // Ignore parse errors
             }
           }
         }
-      }
-
-    } catch (error: unknown) {
-       clearTimeout(timeoutId);
-       let errorText = 'Connection error occurred.';
-       if (error instanceof Error) {
-         if (error.name === 'AbortError') {
-           errorText = '[Error] 요청 시간이 초과되었습니다 (60초).';
-         } else {
-           errorText = `[Error] ${error.message}`;
+  
+      } catch (error: unknown) {
+         clearTimeout(timeoutId);
+         let errorText = 'Connection error occurred.';
+         if (error instanceof Error) {
+           if (error.name === 'AbortError') {
+             errorText = '[Error] 요청 시간이 초과되었습니다 (60초).';
+           } else {
+             errorText = `[Error] ${error.message}`;
+           }
          }
-       }
-       // Replace the empty message with error
-       setMessages((prev) => prev.map(msg => 
-         msg.id === aiMsgId ? { ...msg, text: errorText } : msg
-       ));
-    } finally {
-      setIsLoadingAi(false);
-      inputRef.current?.focus();
-    }
-  };
-
+         // Replace the empty message with error
+         setMessages((prev) => prev.map(msg => 
+           msg.id === aiMsgId ? { ...msg, text: errorText } : msg
+         ));
+      } finally {
+        setIsLoadingAi(false);
+        inputRef.current?.focus();
+      }
+    };
   const toggleLanguage = () => {
     const nextLng = i18n.language.startsWith('ko') ? 'en' : 'ko';
     i18n.changeLanguage(nextLng);
