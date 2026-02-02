@@ -27,7 +27,7 @@ function App() {
   } = useUIStore();
   const { 
     question, messages, isLoadingAi, 
-    setQuestion, setMessages, setIsLoadingAi 
+    setQuestion, setMessages, setIsLoadingAi, updateLastMessage 
   } = useChatStore();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,7 @@ function App() {
                  
                  const { error: insertError } = await supabase
                    .from('users')
-                   .insert({ 
+                   .insert({
                        id: userId, 
                        email: user.email,
                        nickname: newNicknameStr,
@@ -120,6 +120,7 @@ function App() {
     const prompt = customPrompt || question;
     if (!prompt.trim()) return;
 
+    // 1. Add User Message
     const userMsg: Message = {
       id: Date.now(),
       text: prompt,
@@ -131,6 +132,16 @@ function App() {
     setIsLoadingAi(true);
     setActiveTab('chat');
     
+    // 2. Add Empty AI Message Placeholder
+    const aiMsgId = Date.now() + 1;
+    const aiMsg: Message = {
+      id: aiMsgId,
+      text: '', // Start empty for streaming
+      sender: 'ai',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages((prev) => [...prev, aiMsg]);
+
     inputRef.current?.focus();
 
     const controller = new AbortController();
@@ -142,6 +153,7 @@ function App() {
 
       if (!token) {
           setShowAuthModal(true);
+          setIsLoadingAi(false);
           return;
       }
 
@@ -156,35 +168,39 @@ function App() {
       });
 
       clearTimeout(timeoutId);
-      const contentType = response.headers.get("content-type");
 
-      if (response.ok && contentType && contentType.includes("application/json")) {
-        const data = await response.json() as { answer?: string };
-        const aiMsg: Message = {
-          id: Date.now() + 1,
-          text: data.answer || "No response text",
-          sender: 'ai',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages((prev) => [...prev, aiMsg]);
-      } else {
-        const errorText = await response.text();
-        let errorMsg = `Server Error (${response.status})`;
-        try {
-            const errorJson = JSON.parse(errorText) as { message?: string, error?: string };
-            errorMsg = errorJson.message || errorJson.error || errorMsg;
-        } catch {
-            // Ignore parse error
-        }
-
-        const aiMsg: Message = {
-          id: Date.now() + 1,
-          text: `[Error] ${errorMsg}`,
-          sender: 'ai',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages((prev) => [...prev, aiMsg]);
+      if (!response.ok || !response.body) {
+        throw new Error(`Server Error (${response.status})`);
       }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            if (dataStr === '[DONE]') continue;
+            
+            try {
+              const json = JSON.parse(dataStr);
+              const content = json.choices?.[0]?.delta?.content || "";
+              if (content) {
+                updateLastMessage(content);
+              }
+            } catch {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+
     } catch (error: unknown) {
        clearTimeout(timeoutId);
        let errorText = 'Connection error occurred.';
@@ -195,13 +211,10 @@ function App() {
            errorText = `[Error] ${error.message}`;
          }
        }
-       const aiMsg: Message = {
-          id: Date.now() + 1,
-          text: errorText,
-          sender: 'ai',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages((prev) => [...prev, aiMsg]);
+       // Replace the empty message with error
+       setMessages((prev) => prev.map(msg => 
+         msg.id === aiMsgId ? { ...msg, text: errorText } : msg
+       ));
     } finally {
       setIsLoadingAi(false);
       inputRef.current?.focus();
@@ -267,16 +280,16 @@ function App() {
       {modalConfig.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${ 
               modalConfig.type === 'success' ? 'bg-green-500/10 border border-green-500/20' :
               modalConfig.type === 'error' ? 'bg-red-500/10 border border-red-500/20' :
               'bg-primary/10 border border-primary/20'
             }`}>
-              <span className={`material-symbols-outlined text-3xl ${
+              <span className={`material-symbols-outlined text-3xl ${ 
                 modalConfig.type === 'success' ? 'text-green-500' :
                 modalConfig.type === 'error' ? 'text-red-500' :
                 'text-primary'
-              }`}>
+              }`}> 
                 {modalConfig.type === 'success' ? 'check_circle' : 
                  modalConfig.type === 'error' ? 'error' : 'info'}
               </span>

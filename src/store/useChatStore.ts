@@ -16,6 +16,7 @@ interface ChatState {
   setSearchQuery: (query: string) => void;
   setSystemPrompt: (prompt: string) => void;
   resetChat: () => void;
+  updateLastMessage: (content: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -40,5 +41,13 @@ export const useChatStore = create<ChatState>((set) => ({
     history: [], 
     isLoadingAi: false,
     searchQuery: '' 
+  }),
+  updateLastMessage: (content) => set((state) => {
+    const newMessages = [...state.messages];
+    if (newMessages.length > 0) {
+      const lastMsg = newMessages[newMessages.length - 1];
+      newMessages[newMessages.length - 1] = { ...lastMsg, text: lastMsg.text + content };
+    }
+    return { messages: newMessages };
   }),
 }));

@@ -27,14 +27,14 @@ export default {
 			return new Response(null, { headers: corsHeaders });
 		}
 
-		const jsonResponse = (data: any, status = 200) => {
+		const jsonResponse = (data: unknown, status = 200) => {
 			return new Response(JSON.stringify(data), {
 				status,
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
 		};
 
-		// Supabase Client Initialization (Propagate User Auth)
+		// Supabase Client Initialization
 		const authHeader = request.headers.get('Authorization');
 		const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
 			global: {
@@ -49,15 +49,15 @@ export default {
 				return jsonResponse({ status: 'ok', time: getKST() });
 			}
 
-			// 3. AI 질문 (Backend handles this to hide OpenRouter Key)
+			// 3. AI 질문 (Streaming Support)
 			if (url.pathname === '/api/ai/ask' && request.method === 'POST') {
-				// Verify User via Supabase
+				// Verify User
 				const { data: { user }, error: authError } = await supabase.auth.getUser();
 				if (authError || !user) return jsonResponse({ error: 'Unauthorized' }, 401);
 
-				const { prompt } = await request.json() as any;
+				const { prompt } = await request.json() as { prompt: string };
 
-				// Fetch System Prompt from Supabase DB
+				// Fetch System Prompt
 				const { data: config } = await supabase
 					.from('system_config')
 					.select('value')
@@ -65,92 +65,138 @@ export default {
 					.single();
 				
 				const systemPrompt = config?.value || '너는 한국어로 대답하는 AI 전문가야';
-
 				const OPENROUTER_KEY = env.OPENROUTER_API_KEY;
 				
-				const callOpenRouter = async (model: string) => {
-					const url = `https://openrouter.ai/api/v1/chat/completions`;
-					return await fetch(url, {
-						method: 'POST',
-						headers: { 
-							'Authorization': `Bearer ${OPENROUTER_KEY}`,
-							'Content-Type': 'application/json',
-							'HTTP-Referer': 'https://proto-9ff.pages.dev',
-							'X-Title': 'Proto AI'
-						},
-						body: JSON.stringify({
-							"model": model,
-							"messages": [
-								{"role": "system", "content": systemPrompt},
-								{"role": "user", "content": prompt}
-							]
-						})
-					});
-				};
-
 				const models = [
-					"google/gemini-3-flash-preview",
-					"google/gemini-3-pro-preview",
-					"google/gemini-2.5-pro",
+					"google/gemini-2.0-flash-001",
 					"google/gemini-2.5-flash",
-					"google/gemini-2.0-flash-001"
+					"google/gemini-2.5-pro",
+                    "google/gemini-3-flash-preview"
 				];
 
-				let aiResponse: any;
-				let aiData: any;
+				let aiResponse: Response | undefined;
 				let lastError = "";
+                let usedModel = "";
 
+				// Model Fallback Loop
 				for (const model of models) {
 					try {
 						const controller = new AbortController();
-						const timeout = setTimeout(() => controller.abort(), 20000); // Increased timeout to 20s
-						aiResponse = await callOpenRouter(model);
+						const timeout = setTimeout(() => controller.abort(), 20000); // 20s connection timeout
+						
+                        // Request Streaming from OpenRouter
+                        aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+							method: 'POST',
+							headers: { 
+								'Authorization': `Bearer ${OPENROUTER_KEY}`,
+								'Content-Type': 'application/json',
+								'HTTP-Referer': 'https://proto-9ff.pages.dev',
+								'X-Title': 'Proto AI'
+							},
+							body: JSON.stringify({
+								"model": model,
+                                "stream": true, // Enable Streaming
+								"messages": [
+									{"role": "system", "content": systemPrompt},
+									{"role": "user", "content": prompt}
+								]
+							}),
+                            signal: controller.signal
+						});
 						clearTimeout(timeout);
 						
 						if (aiResponse.ok) {
-							aiData = await aiResponse.json();
-							// Check if choice exists (sometimes ok response but empty choices)
-							if (aiData.choices && aiData.choices.length > 0) {
-								break;
-							}
+                            usedModel = model;
+							break;
 						}
 						
-						// If response not ok or no choices, capture error and continue
-						try {
-							const errorData = await aiResponse.json();
-							lastError = errorData.error?.message || `Model ${model} failed`;
-						} catch (e) {
-							lastError = `Model ${model} failed with status ${aiResponse.status}`;
-						}
-						console.log(`Fallback from ${model}: ${lastError}`);
-					} catch (e: any) {
-						lastError = e.message || "Network error";
+                        // Log error and try next
+                        try {
+                            const errText = await aiResponse.text();
+                            lastError = `Model ${model} failed: ${errText}`;
+                        } catch {
+                            lastError = `Model ${model} failed with status ${aiResponse.status}`;
+                        }
+						console.log(lastError);
+                        aiResponse = undefined; // Reset if failed
+					} catch (e: unknown) {
+						lastError = e instanceof Error ? e.message : "Network error";
 						continue;
 					}
 				}
 
-				if (!aiResponse || !aiResponse.ok) return jsonResponse({ error: lastError || "AI 응답 실패" }, 500);
+				if (!aiResponse || !aiResponse.body) {
+                    return jsonResponse({ error: lastError || "AI 응답 실패" }, 500);
+                }
 
-				const answer = aiData.choices?.[0]?.message?.content;
-				if (answer) {
-					// Save to Supabase ChatHistory
-					await supabase.from('chat_history').insert({
-						user_id: user.id,
-						question: String(prompt),
-						answer: String(answer),
-						// created_at is default now()
-					});
-					return jsonResponse({ answer });
-				}
-				return jsonResponse({ error: 'AI 답변 생성 실패' }, 500);
+                // Transform Stream to capture full response for DB
+                const { readable, writable } = new TransformStream();
+                const writer = writable.getWriter();
+                const reader = aiResponse.body.getReader();
+                const encoder = new TextEncoder();
+                const decoder = new TextDecoder();
+
+                let fullAnswer = "";
+
+                // Stream processing
+                (async () => {
+                    try {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            
+                            // 1. Send chunk to client immediately
+                            await writer.write(value);
+
+                            // 2. Accumulate text for DB
+                            const chunk = decoder.decode(value, { stream: true });
+                            // SSE format: data: {...}
+                            const lines = chunk.split('\n');
+                            for (const line of lines) {
+                                if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                                    try {
+                                        const json = JSON.parse(line.slice(6));
+                                        const content = json.choices?.[0]?.delta?.content || "";
+                                        fullAnswer += content;
+                                    } catch {
+                                        // Ignore parse errors for partial chunks
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Stream processing error", e);
+                        // Optional: Write error to stream
+                    } finally {
+                        await writer.close();
+                        
+                        // Save to DB after stream finishes
+                        if (fullAnswer.trim()) {
+                            await supabase.from('chat_history').insert({
+                                user_id: user.id,
+                                question: prompt,
+                                answer: fullAnswer,
+                                // meta: { model: usedModel } // Optional: save model info
+                            });
+                        }
+                    }
+                })();
+
+				return new Response(readable, {
+                    headers: {
+                        ...corsHeaders,
+                        'Content-Type': 'text/event-stream',
+                        'Cache-Control': 'no-cache',
+                        'Connection': 'keep-alive',
+                    }
+                });
 			}
 
-			// Other endpoints are now handled directly by Supabase Client on Frontend.
-			// Returning 404 for deprecated endpoints to prompt frontend update.
-			return jsonResponse({ error: 'Endpoint moved to Supabase Client' }, 404);
+			return jsonResponse({ error: 'Not Found' }, 404);
 
-		} catch (e: any) {
-			return jsonResponse({ error: e.message || 'Internal Server Error' }, 500);
+		} catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : 'Internal Server Error';
+			return jsonResponse({ error: msg }, 500);
 		}
 	},
 };
