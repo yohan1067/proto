@@ -46,7 +46,7 @@ export default {
 
 		try {
 			if (url.pathname === '/api/health') {
-				return jsonResponse({ status: 'ok', time: getKST() });
+				return jsonResponse({ status: 'ok', time: getKST(), version: '1.1.0' });
 			}
 
 			// 3. AI 질문 (Streaming Support)
