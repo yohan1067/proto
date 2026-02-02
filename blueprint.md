@@ -1,47 +1,40 @@
-# Gemini AI Assistant Blueprint
+# AI Assistant Pilot Service (Proto) - Blueprint
 
 ## Project Overview
-React + TypeScript + Vite 기반의 현대적인 AI 채팅 애플리케이션입니다. Cloudflare Workers와 D1 Database를 백엔드로 사용하며, OpenRouter AI를 통해 다양한 고성능 AI 모델의 답변을 제공합니다.
+사용자 경험을 극대화한 실시간 스트리밍 기반의 AI 채팅 파일럿 서비스입니다.  
+GitHub 저장소와 Cloudflare(Pages & Workers)를 연동하여 완벽한 자동 배포(CI/CD) 환경을 구축했습니다.
 
 ## Tech Stack
-- **Frontend**: React 19, Tailwind CSS v4, i18next, Material Symbols
-- **Backend**: Cloudflare Workers (Native D1 SQL)
+- **Frontend**: React 19, TypeScript, Vite, Zustand (전역 상태 관리), Tailwind CSS v4, i18next
+- **Backend**: Cloudflare Workers (Serverless, Streaming SSE)
 - **Database**: Supabase (PostgreSQL)
-- **Auth**: Supabase Auth (Kakao OAuth 2.0)
-- **AI**: OpenRouter AI (Gemini 2.0 Flash, Llama 3.3, Gemma 3 등 다중 모델 폴백)
+- **Auth**: Supabase Auth (Kakao OAuth 2.0 / Email)
+- **AI**: OpenRouter API (Gemini 2.0/2.5 Flash & Pro Fallback 지원)
 
 ## Implemented Features
 ### 1. Visual Design & UI
 - **Landing Page**: AI Orb 애니메이션과 다크 테마 디자인.
-- **Chat Interface**: Glassmorphism 말풍선, 자동 스크롤, 메시지 복사, 모바일 최적화 레이아웃.
+- **Chat Interface**: Glassmorphism 디자인, 실시간 스트리밍 답변, 자동 스크롤, 메시지 복사(Fallback 지원).
 - **Navigation**: 하단 탭 바 (Chat, History, Profile, Admin).
-- **Favicon**: AI Orb 디자인의 커스텀 SVG 파비콘.
-- **Feedback**: 커스텀 인증 모달 및 유니버설 알림 시스템.
+- **Loading UX**: Skeleton UI 적용 (History 탭), AI 답변 생성 시 "..." 애니메이션.
+- **Responsive**: 모바일 로고 겹침 문제 해결 및 최적화된 레이아웃.
 
 ### 2. Core Functionality
-- **Multi-language**: 한국어/영어 완벽 지원 및 자동 감지.
-- **AI Chat**: OpenRouter 기반의 리전 제한 없는 무제한 대화 환경 (60초 타임아웃).
-- **User Management**: 닉네임 수정 및 데이터 완전 삭제(회원 탈퇴).
-- **History**: 대화 기록 저장, 검색 및 복구.
-- **Admin**: 실시간 시스템 프롬프트 수정 및 전체 회원 목록 조회 (USER/ADMIN 구분).
+- **Streaming Response**: SSE(Server-Sent Events)를 통한 실시간 답변 출력.
+- **Model Fallback**: 다중 모델 시도를 통한 서비스 안정성 확보.
+- **History**: 대화 기록 저장, 검색 및 복구 기능 (HistoryTab 분리).
+- **Profile**: 닉네임 수정, 언어 변경(한/영), 로그아웃 및 회원 탈퇴.
+- **Admin**: 실시간 시스템 프롬프트 수정 및 서비스 전체 대화 로그 모니터링.
 
-### 3. Reliability & Security
-- **Infrastructure**: Supabase SDK 직접 연동 (Prisma 제거 완료).
-- **Security**: API 키(OpenRouter, Supabase)를 Cloudflare Secrets 및 환경 변수로 관리.
-- **Robustness**: 비정상 응답 시 HTML 대신 항상 JSON 반환하도록 설계.
+### 3. Architecture & Reliability
+- **Clean Code**: 모든 UI 요소를 `src/components`로 분리하고, 비즈니스 로직은 `src/hooks` (useChat, useAuthInit)로 캡슐화.
+- **State Management**: Zustand를 사용하여 `Auth`, `Chat`, `UI` 상태를 전역적으로 깔끔하게 관리.
+- **Security**: API 키 및 보안 정보는 Cloudflare Secrets 및 환경 변수로 철저히 분리.
 
 ## Deployment Information
-- **Deployment Policy**: **Git Push Only**. Do not use manual CLI deployment tools.
-- **Frontend URL**: https://proto-9ff.pages.dev
-- **Backend URL**: https://proto-backend.yohan1067.workers.dev
+- **Deployment Policy**: **Git Push Only (CI/CD)**. 수동 배포 지양.
+- **Frontend (Pages)**: `proto-9ff` (URL: https://proto-9ff.pages.dev)
+- **Backend (Workers)**: `proto-backend` (Entry: `server/index.ts`)
 
-## Project Status: Active Maintenance
-- **Refactoring**: Encouraged for unused code or optimization.
-- **Deployment**: **NEVER** run `wrangler deploy` or `pages deploy`. Rely on Git.
-- **Code Integrity**: Modify only necessary parts; preserve existing features.
-
-## Current Status
-- [x] UI/UX 및 다국어 지원 완료
-- [x] OpenRouter AI 백엔드 통합 완료 (리전 이슈 해결)
-- [x] 프로필 관리 및 관리자 기능 완료
-- [x] 대화 기록 및 성능 최적화 완료
+## Project Status: Stable / Full Automation
+- 모든 요구사항이 충족되었으며, 자동화된 배포 환경에서 안정적으로 운영 중입니다.
