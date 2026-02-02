@@ -57,7 +57,8 @@ const resources = {
       "profile_withdraw_button": "WITHDRAW ACCOUNT",
       "auth_modal_title": "Session Expired",
       "auth_modal_message": "Your session has expired or is invalid. Please log in again.",
-      "auth_modal_button": "Return to Login"
+      "auth_modal_button": "Return to Login",
+      "login_email_continue": "Continue with Email"
     }
   },
   ko: {
@@ -114,7 +115,8 @@ const resources = {
       "profile_withdraw_button": "회원 탈퇴",
       "auth_modal_title": "세션 만료",
       "auth_modal_message": "인증 정보가 만료되었거나 유효하지 않습니다. 다시 로그인해주세요.",
-      "auth_modal_button": "로그인 화면으로 이동"
+      "auth_modal_button": "로그인 화면으로 이동",
+      "login_email_continue": "이메일로 계속하기"
     }
   }
 };

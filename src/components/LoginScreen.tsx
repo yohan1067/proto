@@ -192,15 +192,23 @@ const LoginScreen: React.FC = () => {
                               )}
                             </button>
             
-                                            <div className="pt-2">
-                                              <button 
-                                                onClick={() => setIsEmailMode(true)}
-                                                className="w-full flex items-center justify-center gap-2 h-16 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all text-white/60 font-semibold text-base shadow-sm"
-                                              >
-                                                <span className="material-symbols-outlined text-xl">mail</span>
-                                                이메일로 계속하기
-                                              </button>
-                                            </div>                          </>
+                                                            <div className="pt-2">
+            
+                                                              <button 
+            
+                                                                onClick={() => setIsEmailMode(true)}
+            
+                                                                className="w-full flex items-center justify-center gap-2 h-16 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all text-white/60 font-semibold text-base shadow-sm"
+            
+                                                              >
+            
+                                                                <span className="material-symbols-outlined text-xl">mail</span>
+            
+                                                                {t('login_email_continue')}
+            
+                                                              </button>
+            
+                                                            </div>                          </>
                         )}
         <div className="text-white/30 text-xs text-center font-normal leading-normal mt-4 px-8">
           {t('terms_prefix')}
