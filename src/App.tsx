@@ -169,40 +169,42 @@ function App() {
   
         clearTimeout(timeoutId);
   
-        if (!response.ok || !response.body) {
-          throw new Error(`Server Error (${response.status})`);
-        }
-  
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-  
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-  
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6);
-              if (dataStr === '[DONE]') continue;
-              
-              try {
-                const json = JSON.parse(dataStr);
-                const content = json.choices?.[0]?.delta?.content || "";
-                if (content) {
-                  appendMessageContent(aiMsgId, content);
-                }
-              } catch {
-                // Ignore parse errors
+              if (!response.ok || !response.body) {
+                throw new Error(`Server Error (${response.status})`);
               }
-            }
-          }
-        }
-  
-      } catch (error: unknown) {
-         clearTimeout(timeoutId);
+        
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder();
+              let buffer = '';
+        
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+        
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+        
+                for (const line of lines) {
+                  const trimmedLine = line.trim();
+                  if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+                  
+                  const dataStr = trimmedLine.slice(6);
+                  if (dataStr === '[DONE]') continue;
+                  
+                  try {
+                    const json = JSON.parse(dataStr);
+                    const content = json.choices?.[0]?.delta?.content || "";
+                    if (content) {
+                      appendMessageContent(aiMsgId, content);
+                    }
+                  } catch (e) {
+                    console.error("Stream parse error:", e);
+                  }
+                }
+              }
+        
+            } catch (error: unknown) {         clearTimeout(timeoutId);
          let errorText = 'Connection error occurred.';
          if (error instanceof Error) {
            if (error.name === 'AbortError') {
