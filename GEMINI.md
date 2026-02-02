@@ -1,5 +1,13 @@
 # **AI Development Guidelines for React in Firebase Studio**
 
+## **CRITICAL: Stability & Maintenance Protocol**
+**This is an existing, stable project.** The AI agent must adhere to the following rules:
+
+1.  **Git-Based Workflow ONLY:** **NEVER** use manual deployment commands (e.g., `wrangler deploy`, `npx wrangler pages deploy`). The user relies on a Git-based CI/CD pipeline targeting the **`proto`** project (Domain: `proto-9ff.pages.dev`). Any manual deployment creates duplicate projects and breaks the workflow.
+2.  **Refactoring is Allowed:** You are encouraged to remove unused code (e.g., Prisma if not used) or optimize existing logic.
+3.  **Minimal Invasive Changes:** When adding features, modify **only** the necessary parts. Do NOT rewrite entire files from templates.
+4.  **Environment Awareness:** Use `import.meta.env` for frontend variables and respect the existing `.env` structure.
+
 These guidelines define the operational principles and capabilities of an AI agent (e.g., Gemini) interacting with React projects within the Firebase Studio environment. The goal is to enable an efficient, automated, and error-resilient application design and development workflow, focusing on modern React practices.
 
 ## **Environment & Context Awareness**

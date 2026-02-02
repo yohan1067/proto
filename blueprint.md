@@ -26,13 +26,19 @@ React + TypeScript + Vite 기반의 현대적인 AI 채팅 애플리케이션입
 - **Admin**: 실시간 시스템 프롬프트 수정 및 전체 회원 목록 조회 (USER/ADMIN 구분).
 
 ### 3. Reliability & Security
-- **Infrastructure**: Prisma 제거 후 Supabase SDK 직접 연동으로 전환하여 속도 최적화.
+- **Infrastructure**: Supabase SDK 직접 연동 (Prisma 제거 완료).
 - **Security**: API 키(OpenRouter, Supabase)를 Cloudflare Secrets 및 환경 변수로 관리.
 - **Robustness**: 비정상 응답 시 HTML 대신 항상 JSON 반환하도록 설계.
 
 ## Deployment Information
+- **Deployment Policy**: **Git Push Only**. Do not use manual CLI deployment tools.
 - **Frontend URL**: https://proto-9ff.pages.dev
 - **Backend URL**: https://proto-backend.yohan1067.workers.dev
+
+## Project Status: Active Maintenance
+- **Refactoring**: Encouraged for unused code or optimization.
+- **Deployment**: **NEVER** run `wrangler deploy` or `pages deploy`. Rely on Git.
+- **Code Integrity**: Modify only necessary parts; preserve existing features.
 
 ## Current Status
 - [x] UI/UX 및 다국어 지원 완료
