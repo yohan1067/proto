@@ -112,17 +112,11 @@ const ProfileTab: React.FC = () => {
             <span className="material-symbols-outlined text-white/70">logout</span>
             {t('logout')}
           </button>
-        </section>
 
-        <section className="space-y-4 pt-4">
-          <h3 className="text-xs font-bold text-red-500/60 uppercase tracking-[0.2em]">{t('profile_danger_zone')}</h3>
-          <div className="bg-red-500/5 border border-red-500/10 rounded-2xl p-4">
-            <p className="text-xs text-red-500/40 mb-4 leading-relaxed">
-              {t('profile_withdraw_warning')}
-            </p>
+          <div className="pt-6 flex justify-center">
             <button 
               onClick={handleWithdraw}
-              className="w-full h-12 border border-red-500/30 text-red-500/60 hover:bg-red-500 hover:text-white rounded-xl transition-all text-xs font-bold uppercase"
+              className="text-xs text-red-500/40 hover:text-red-500 transition-colors underline underline-offset-4"
             >
               {t('profile_withdraw_button')}
             </button>

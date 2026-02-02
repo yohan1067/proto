@@ -26,10 +26,12 @@ const ChatHeader: React.FC = () => {
           <span className="text-xs text-white/60 hidden sm:block">{nickname}{t('welcome')}</span>
           <button 
             onClick={toggleLanguage}
-            className="w-10 h-10 rounded-full border border-white/20 overflow-hidden bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all group"
+            className="h-10 px-3 rounded-full border border-white/20 overflow-hidden bg-white/10 flex items-center justify-center gap-1.5 hover:bg-white/20 transition-all group"
+            aria-label="Change Language"
           >
-            <span className="text-xs font-bold text-white/70 group-hover:text-white">
-              {i18n.language.startsWith('ko') ? 'EN' : '한'}
+            <span className="material-symbols-outlined text-white/70 group-hover:text-white text-lg">language</span>
+            <span className="text-xs font-bold text-white/70 group-hover:text-white uppercase">
+              {i18n.language.startsWith('ko') ? 'EN' : 'KR'}
             </span>
           </button>
         </div>
