@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // Supabase Configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -586,7 +588,28 @@ function App() {
                     {messages.map((msg) => (
                       <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
                         <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full whitespace-pre-wrap`}>
-                          {msg.text}
+                          {msg.sender === 'ai' ? (
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
+                                ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
+                                li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                                p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                strong: ({node, ...props}) => <span className="font-bold text-white" {...props} />,
+                                h1: ({node, ...props}) => <h1 className="text-lg font-bold my-2" {...props} />,
+                                h2: ({node, ...props}) => <h2 className="text-base font-bold my-2" {...props} />,
+                                h3: ({node, ...props}) => <h3 className="text-sm font-bold my-1" {...props} />,
+                                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-2 bg-white/5 rounded-r" {...props} />,
+                                code: ({node, ...props}) => <code className="bg-black/30 rounded px-1 py-0.5 text-xs font-mono" {...props} />,
+                                pre: ({node, ...props}) => <pre className="bg-black/30 rounded p-2 my-2 overflow-x-auto text-xs font-mono" {...props} />,
+                              }}
+                            >
+                              {msg.text}
+                            </ReactMarkdown>
+                          ) : (
+                            msg.text
+                          )}
                           {msg.sender === 'ai' && (
                             <button 
                               onClick={() => {
@@ -662,7 +685,7 @@ function App() {
                 </div>
               </header>
 
-              <main className="flex-1 overflow-y-auto px-6 pb-32 space-y-4 no-scrollbar">
+              <main className="flex-1 overflow-y-auto px-6 pt-4 pb-32 space-y-4 no-scrollbar">
                 {filteredHistory.length === 0 ? (
                   <div className="pt-10 text-center text-white/30 text-sm italic">
                     {t('no_history')}
