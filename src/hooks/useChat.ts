@@ -15,7 +15,7 @@ export const useChat = () => {
   const { setShowAuthModal, setShowToast, setActiveTab } = useUIStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
