@@ -5,7 +5,7 @@ import { useUIStore } from '../store/useUIStore';
 import { supabase } from '../lib/supabase';
 
 const ProfileTab: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session, nickname, setNickname, resetAuth } = useAuthStore();
   const { showAlert } = useUIStore();
   
@@ -15,6 +15,11 @@ const ProfileTab: React.FC = () => {
   useEffect(() => {
     setNewNickname(nickname || '');
   }, [nickname]);
+
+  const toggleLanguage = () => {
+    const nextLng = i18n.language.startsWith('ko') ? 'en' : 'ko';
+    i18n.changeLanguage(nextLng);
+  };
 
   const handleUpdateNickname = async () => {
     if (!newNickname.trim() || newNickname.trim().length < 2) {
@@ -101,6 +106,16 @@ const ProfileTab: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+          
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2 flex justify-between items-center">
+            <span className="text-xs text-white/40 ml-1">Language / 언어</span>
+            <button 
+              onClick={toggleLanguage}
+              className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-wider text-white"
+            >
+              {i18n.language.startsWith('ko') ? 'English' : '한국어'}
+            </button>
           </div>
         </section>
 

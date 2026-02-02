@@ -16,7 +16,7 @@ import { supabase } from './lib/supabase';
 const BACKEND_URL = 'https://proto-backend.yohan1067.workers.dev';
 
 function App() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { 
     session, isAdmin, isInitialLoading,
     setSession, setIsAdmin, setNickname, setIsInitialLoading 
@@ -215,19 +215,15 @@ function App() {
          setMessages((prev) => prev.map(msg => 
            msg.id === aiMsgId ? { ...msg, text: errorText } : msg
          ));
-      } finally {
-        setIsLoadingAi(false);
-        inputRef.current?.focus();
-      }
-    };
-  const toggleLanguage = () => {
-    const nextLng = i18n.language.startsWith('ko') ? 'en' : 'ko';
-    i18n.changeLanguage(nextLng);
-  };
-
-  const handleAuthModalConfirm = () => {
-    setShowAuthModal(false);
-  };
+          } finally {
+            setIsLoadingAi(false);
+            inputRef.current?.focus();
+          }
+        };
+      
+        const handleAuthModalConfirm = () => {
+          setShowAuthModal(false);
+        };
 
   if (isInitialLoading) {
     return (
@@ -275,54 +271,44 @@ function App() {
         </div>
       )}
 
-      {/* Universal Alert Modal */}
-      {modalConfig.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${ 
-              modalConfig.type === 'success' ? 'bg-green-500/10 border border-green-500/20' :
-              modalConfig.type === 'error' ? 'bg-red-500/10 border border-red-500/20' :
-              'bg-primary/10 border border-primary/20'
-            }`}>
-              <span className={`material-symbols-outlined text-3xl ${ 
-                modalConfig.type === 'success' ? 'text-green-500' :
-                modalConfig.type === 'error' ? 'text-red-500' :
-                'text-primary'
-              }`}> 
-                {modalConfig.type === 'success' ? 'check_circle' : 
-                 modalConfig.type === 'error' ? 'error' : 'info'}
-              </span>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">{modalConfig.title}</h3>
-              <p className="text-sm text-white/50 leading-relaxed break-words whitespace-pre-wrap">
-                {modalConfig.message}
-              </p>
-            </div>
-            <button 
-              onClick={() => {
-                setModalConfig({ ...modalConfig, show: false });
-                if (modalConfig.onConfirm) modalConfig.onConfirm();
-              }}
-              className="w-full h-14 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-white/10 transition-all active:scale-95"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="absolute top-4 left-4 z-50">
-        <button 
-          onClick={toggleLanguage}
-          className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-wider"
-        >
-          {i18n.language.startsWith('ko') ? 'English' : '한국어'}
-        </button>
-      </div>
-
-      {session ? (
-        <div className="relative flex h-screen w-full flex-col bg-gradient-mesh overflow-hidden mx-auto max-w-3xl shadow-2xl border-x border-white/5">
+            {/* Universal Alert Modal */}
+            {modalConfig.show && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="w-full max-w-sm bg-[#161b2a] border border-white/10 rounded-3xl p-8 shadow-2xl shadow-black/50 text-center space-y-6">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+                    modalConfig.type === 'success' ? 'bg-green-500/10 border border-green-500/20' :
+                    modalConfig.type === 'error' ? 'bg-red-500/10 border border-red-500/20' :
+                    'bg-primary/10 border border-primary/20'
+                  }`}>
+                    <span className={`material-symbols-outlined text-3xl ${
+                      modalConfig.type === 'success' ? 'text-green-500' :
+                      modalConfig.type === 'error' ? 'text-red-500' :
+                      'text-primary'
+                    }`}>
+                      {modalConfig.type === 'success' ? 'check_circle' : 
+                       modalConfig.type === 'error' ? 'error' : 'info'}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-white">{modalConfig.title}</h3>
+                    <p className="text-sm text-white/50 leading-relaxed break-words whitespace-pre-wrap">
+                      {modalConfig.message}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setModalConfig({ ...modalConfig, show: false });
+                      if (modalConfig.onConfirm) modalConfig.onConfirm();
+                    }}
+                    className="w-full h-14 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-white/10 transition-all active:scale-95"
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
+            )}
+      
+            {session ? (        <div className="relative flex h-screen w-full flex-col bg-gradient-mesh overflow-hidden mx-auto max-w-3xl shadow-2xl border-x border-white/5">
           {activeTab === 'chat' ? (
             <>
               <ChatHeader />

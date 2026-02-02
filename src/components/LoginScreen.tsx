@@ -5,13 +5,18 @@ import { useUIStore } from '../store/useUIStore';
 import { supabase } from '../lib/supabase';
 
 const LoginScreen: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isLoggingIn, setIsLoggingIn } = useAuthStore();
   const { showAlert } = useUIStore();
   
   const [isEmailMode, setIsEmailMode] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+
+  const toggleLanguage = () => {
+    const nextLng = i18n.language.startsWith('ko') ? 'en' : 'ko';
+    i18n.changeLanguage(nextLng);
+  };
 
   const handleEmailLogin = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -86,6 +91,15 @@ const LoginScreen: React.FC = () => {
 
   return (
     <div className="relative flex-1 flex flex-col justify-between overflow-hidden max-w-3xl mx-auto w-full shadow-2xl border-x border-white/5">
+      <div className="absolute top-4 left-4 z-50">
+        <button 
+          onClick={toggleLanguage}
+          className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-wider text-white"
+        >
+          {i18n.language.startsWith('ko') ? 'English' : '한국어'}
+        </button>
+      </div>
+
       <div className="flex items-center bg-transparent p-4 justify-end z-10 mt-4">
       </div>
 
