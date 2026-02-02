@@ -185,25 +185,30 @@ function App() {
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
         
-                for (const line of lines) {
-                  const trimmedLine = line.trim();
-                  if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
-                  
-                  const dataStr = trimmedLine.slice(6);
-                  if (dataStr === '[DONE]') continue;
-                  
-                  try {
-                    const json = JSON.parse(dataStr);
-                    const content = json.choices?.[0]?.delta?.content || "";
-                    if (content) {
-                      appendMessageContent(aiMsgId, content);
-                    }
-                  } catch (e) {
-                    console.error("Stream parse error:", e);
-                  }
-                }
-              }
-        
+                        for (const line of lines) {
+                          const trimmedLine = line.trim();
+                          // Skip empty lines or keep-alive comments
+                          if (!trimmedLine || trimmedLine.startsWith(':')) continue;
+                          
+                          // Allow loose matching for "data:"
+                          const dataIndex = trimmedLine.indexOf('data: ');
+                          if (dataIndex === -1) continue;
+                          
+                          const dataStr = trimmedLine.slice(dataIndex + 6);
+                          if (dataStr === '[DONE]') continue;
+                          
+                          try {
+                            const json = JSON.parse(dataStr);
+                            // OpenRouter/OpenAI format: choices[0].delta.content
+                            const content = json.choices?.[0]?.delta?.content || "";
+                            if (content) {
+                              appendMessageContent(aiMsgId, content);
+                            }
+                          } catch (e) {
+                            console.warn("Stream parse error for line:", trimmedLine, e);
+                          }
+                        }
+                      }        
             } catch (error: unknown) {         clearTimeout(timeoutId);
          let errorText = 'Connection error occurred.';
          if (error instanceof Error) {
