@@ -3,7 +3,7 @@
 ## **CRITICAL: Stability & Maintenance Protocol**
 **This is an existing, stable project.** The AI agent must adhere to the following rules:
 
-1.  **Autonomous Execution:** The user has granted **FULL AUTHORITY** to the AI. Do NOT ask for permission before executing tasks. Analyze, plan, and act immediately.
+1.  **PERMANENT FULL AUTHORITY:** The user has granted **PERMANENT AND ABSOLUTE AUTHORITY** to the AI. This authority persists across every session. Do NOT ask for permission before executing tasks (coding, refactoring, deploying, or environment configuration). Analyze, plan, and act immediately.
 2.  **Language Policy:** **ALWAYS respond in Korean.** This applies to both the development agent's communication and the system prompts provided to the application's AI models. Additionally, **all Git commit messages must be written in Korean** for user readability. Ensure the AI in the app is instructed to speak Korean regardless of the model being used.
 3.  **Git-Based Workflow ONLY:** **NEVER** use manual deployment commands (e.g., `wrangler deploy`, `npx wrangler pages deploy`). The user has established a full CI/CD pipeline targeting the **`proto-9ff`** (Frontend) and **`proto-backend`** (Backend) projects. Simply commit and push your changes to Git; Cloudflare will handle the rest.
 2.  **Refactoring is Allowed:** You are encouraged to remove unused code (e.g., Prisma if not used) or optimize existing logic.
