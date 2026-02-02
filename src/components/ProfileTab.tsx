@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUIStore } from '../store/useUIStore';
+import { useChatStore } from '../store/useChatStore';
 import { supabase } from '../lib/supabase';
 
 const ProfileTab: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { session, nickname, setNickname, resetAuth } = useAuthStore();
   const { showAlert } = useUIStore();
+  const { resetChat } = useChatStore();
   
   const [newNickname, setNewNickname] = useState<string>('');
   const [isUpdatingNickname, setIsUpdatingNickname] = useState<boolean>(false);
@@ -15,11 +17,6 @@ const ProfileTab: React.FC = () => {
   useEffect(() => {
     setNewNickname(nickname || '');
   }, [nickname]);
-
-  const toggleLanguage = () => {
-    const nextLng = i18n.language.startsWith('ko') ? 'en' : 'ko';
-    i18n.changeLanguage(nextLng);
-  };
 
   const handleUpdateNickname = async () => {
     if (!newNickname.trim() || newNickname.trim().length < 2) {
@@ -53,7 +50,7 @@ const ProfileTab: React.FC = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     resetAuth();
-    // ChatStore reset logic needs to be called too, maybe via a global reset or effect in App
+    resetChat();
   };
 
   const handleWithdraw = async () => {
@@ -108,15 +105,13 @@ const ProfileTab: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2 flex justify-between items-center">
-            <span className="text-xs text-white/40 ml-1">Language / 언어</span>
-            <button 
-              onClick={toggleLanguage}
-              className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-wider text-white"
-            >
-              {i18n.language.startsWith('ko') ? 'English' : '한국어'}
-            </button>
-          </div>
+          <button 
+            onClick={handleLogout}
+            className="w-full h-14 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-white/70">logout</span>
+            {t('logout')}
+          </button>
         </section>
 
         <section className="space-y-4 pt-4">

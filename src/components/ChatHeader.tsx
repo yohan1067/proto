@@ -1,18 +1,14 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
-import { useChatStore } from '../store/useChatStore';
-import { supabase } from '../lib/supabase';
 
 const ChatHeader: React.FC = () => {
-  const { t } = useTranslation();
-  const { nickname, resetAuth } = useAuthStore();
-  const { resetChat } = useChatStore();
+  const { t, i18n } = useTranslation();
+  const { nickname } = useAuthStore();
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    resetAuth();
-    resetChat();
+  const toggleLanguage = () => {
+    const nextLng = i18n.language.startsWith('ko') ? 'en' : 'ko';
+    i18n.changeLanguage(nextLng);
   };
 
   return (
@@ -29,10 +25,12 @@ const ChatHeader: React.FC = () => {
         <div className="flex items-center gap-3">
           <span className="text-xs text-white/60 hidden sm:block">{nickname}{t('welcome')}</span>
           <button 
-            onClick={handleLogout}
+            onClick={toggleLanguage}
             className="w-10 h-10 rounded-full border border-white/20 overflow-hidden bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all group"
           >
-            <span className="material-symbols-outlined text-white/70 group-hover:text-red-400">logout</span>
+            <span className="text-xs font-bold text-white/70 group-hover:text-white">
+              {i18n.language.startsWith('ko') ? 'EN' : '한'}
+            </span>
           </button>
         </div>
       </header>
