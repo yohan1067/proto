@@ -20,7 +20,10 @@ const ChatHeader: React.FC = () => {
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(19,91,236,0.5)]">
             <span className="material-symbols-outlined text-white text-sm fill-1">auto_awesome</span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">AI Assistant</h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-tight">AI Assistant</h1>
+            <span className="text-[8px] text-white/20 -mt-1 font-mono tracking-widest">v1.1.1 (AUTO)</span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-white/60 hidden sm:block">{nickname}{t('welcome')}</span>
