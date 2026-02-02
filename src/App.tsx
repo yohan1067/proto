@@ -559,7 +559,7 @@ function App() {
             <>
               <div className="absolute inset-0 gradient-blur pointer-events-none"></div>
               
-              <header className="flex items-center justify-between px-6 pt-14 pb-4 z-20 absolute top-0 left-0 right-0 bg-gradient-to-b from-background-dark/90 to-transparent backdrop-blur-[2px]">
+              <header className="flex items-center justify-between px-6 py-4 z-20 shrink-0 bg-gradient-to-b from-background-dark/90 to-transparent backdrop-blur-[2px]">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(19,91,236,0.5)]">
                     <span className="material-symbols-outlined text-white text-sm fill-1">auto_awesome</span>
@@ -577,7 +577,7 @@ function App() {
                 </div>
               </header>
 
-              <main className={`flex-1 relative overflow-y-auto px-4 pt-24 pb-32 scroll-smooth no-scrollbar`}>
+              <main className={`flex-1 relative overflow-y-auto px-4 pt-4 pb-32 scroll-smooth no-scrollbar`}>
                 {messages.length === 0 ? (
                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 px-10 text-center -mt-20">
                       <span className="material-symbols-outlined text-6xl mb-4">chat_bubble</span>
