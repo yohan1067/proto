@@ -13,7 +13,7 @@ const getKST = () => {
 };
 
 export default {
-	async fetch(request: Request, env: Env): Promise<Response> {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
 		
 		const corsHeaders = {
@@ -76,13 +76,12 @@ export default {
 
 				let aiResponse: Response | undefined;
 				let lastError = "";
-                let usedModel = "";
 
 				// Model Fallback Loop
 				for (const model of models) {
 					try {
 						const controller = new AbortController();
-						const timeout = setTimeout(() => controller.abort(), 20000); // 20s connection timeout
+						const timeout = setTimeout(() => controller.abort(), 20000); 
 						
                         // Request Streaming from OpenRouter
                         aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -106,11 +105,9 @@ export default {
 						clearTimeout(timeout);
 						
 						if (aiResponse.ok) {
-                            usedModel = model;
 							break;
 						}
 						
-                        // Log error and try next
                         try {
                             const errText = await aiResponse.text();
                             lastError = `Model ${model} failed: ${errText}`;
@@ -118,7 +115,7 @@ export default {
                             lastError = `Model ${model} failed with status ${aiResponse.status}`;
                         }
 						console.log(lastError);
-                        aiResponse = undefined; // Reset if failed
+                        aiResponse = undefined; 
 					} catch (e: unknown) {
 						lastError = e instanceof Error ? e.message : "Network error";
 						continue;
@@ -129,60 +126,46 @@ export default {
                     return jsonResponse({ error: lastError || "AI 응답 실패" }, 500);
                 }
 
-                // Transform Stream to capture full response for DB
-                const { readable, writable } = new TransformStream();
-                const writer = writable.getWriter();
-                const reader = aiResponse.body.getReader();
-                const encoder = new TextEncoder();
-                const decoder = new TextDecoder();
+                // Tee the stream: one for client, one for DB
+                const [clientStream, dbStream] = aiResponse.body.tee();
 
-                let fullAnswer = "";
-
-                // Stream processing
-                (async () => {
+                // Process DB logging in background
+                ctx.waitUntil((async () => {
                     try {
+                        const reader = dbStream.getReader();
+                        const decoder = new TextDecoder();
+                        let fullAnswer = "";
+
                         while (true) {
                             const { done, value } = await reader.read();
                             if (done) break;
                             
-                            // 1. Send chunk to client immediately
-                            await writer.write(value);
-
-                            // 2. Accumulate text for DB
                             const chunk = decoder.decode(value, { stream: true });
-                            // SSE format: data: {...}
                             const lines = chunk.split('\n');
                             for (const line of lines) {
-                                if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
                                     try {
                                         const json = JSON.parse(line.slice(6));
                                         const content = json.choices?.[0]?.delta?.content || "";
                                         fullAnswer += content;
-                                    } catch {
-                                        // Ignore parse errors for partial chunks
-                                    }
+                                    } catch { /* ignore */ }
                                 }
                             }
                         }
-                    } catch (e) {
-                        console.error("Stream processing error", e);
-                        // Optional: Write error to stream
-                    } finally {
-                        await writer.close();
-                        
-                        // Save to DB after stream finishes
+
                         if (fullAnswer.trim()) {
                             await supabase.from('chat_history').insert({
                                 user_id: user.id,
                                 question: prompt,
                                 answer: fullAnswer,
-                                // meta: { model: usedModel } // Optional: save model info
                             });
                         }
+                    } catch (e) {
+                        console.error("DB logging error:", e);
                     }
-                })();
+                })());
 
-				return new Response(readable, {
+				return new Response(clientStream, {
                     headers: {
                         ...corsHeaders,
                         'Content-Type': 'text/event-stream',
