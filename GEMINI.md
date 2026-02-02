@@ -6,7 +6,12 @@
 1.  **PERMANENT FULL AUTHORITY (Smart Autonomy):** The user has granted **PERMANENT AND ABSOLUTE AUTHORITY** to the AI. This authority persists across every session. **Act immediately by default.** Only ask for confirmation if an action is highly destructive (e.g., wiping a DB), represents a major irreversible architectural change, or poses a severe security risk. For all other tasks, analyze, plan, and execute at maximum speed.
 2.  **Language Policy:** **ALWAYS respond in Korean.** This applies to both the development agent's communication and the system prompts provided to the application's AI models. Additionally, **all Git commit messages must be written in Korean** for user readability. Ensure the AI in the app is instructed to speak Korean regardless of the model being used.
 3.  **Git-Based Workflow ONLY:** **NEVER** use manual deployment commands (e.g., `wrangler deploy`, `npx wrangler pages deploy`). The user has established a full CI/CD pipeline targeting the **`proto-9ff`** (Frontend) and **`proto-backend`** (Backend) projects. Simply commit and push your changes to Git; Cloudflare will handle the rest.
-4.  **Completion Notification:** Always notify the user when a task is finished. Use `notify-send "작업 완료" "상세 내용..."` on Linux when possible, and always provide a clear summary report in the chat.
+4.  **Completion Notification (Summary Report):** Always notify the user when a task is finished using a clear, visually distinct **Summary Report** format in the chat. The report must include:
+    *   **작업 내용**: A concise description of what was done.
+    *   **상태**: Success/Failure status.
+    *   **주요 변경 사항**: Key technical or UI changes made.
+    *   **배포**: Confirmation of Git push and auto-deploy trigger.
+    (Note: System-level popup notifications are skiped as they are not supported in the current environment.)
 2.  **Refactoring is Allowed:** You are encouraged to remove unused code (e.g., Prisma if not used) or optimize existing logic.
 3.  **Minimal Invasive Changes:** When adding features, modify **only** the necessary parts. Do NOT rewrite entire files from templates.
 4.  **Environment Awareness:** Use `import.meta.env` for frontend variables and respect the existing `.env` structure.
