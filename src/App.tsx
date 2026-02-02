@@ -313,7 +313,7 @@ function App() {
             <>
               <ChatHeader />
 
-              <main className={`flex-1 relative overflow-y-auto px-4 pt-4 pb-32 scroll-smooth no-scrollbar`}>
+              <main className={`flex-1 relative overflow-y-auto px-4 pt-6 pb-32 scroll-smooth no-scrollbar`}>
                 {messages.length === 0 ? (
                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-30 px-10 text-center -mt-20">
                       <span className="material-symbols-outlined text-6xl mb-4">chat_bubble</span>
@@ -329,13 +329,6 @@ function App() {
                         triggerToast={triggerToast} 
                       />
                     ))}
-                    {isLoadingAi && (
-                      <div className="flex flex-col items-start max-w-[85%] animate-pulse">
-                        <div className="glass-ai rounded-2xl rounded-tl-none p-4 text-[15px]">
-                          <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                        </div>
-                      </div>
-                    )}
                     <div ref={messagesEndRef} />
                   </div>
                 )}
