@@ -64,7 +64,8 @@ export default {
 					.eq('key', 'system_prompt')
 					.single();
 				
-				const systemPrompt = config?.value || '너는 한국어로 대답하는 AI 전문가야';
+				const baseSystemPrompt = config?.value || '너는 유능한 AI 전문가야.';
+                const systemPrompt = `${baseSystemPrompt} 반드시 한국어로만 답변해줘.`;
 				const OPENROUTER_KEY = env.OPENROUTER_API_KEY;
 				
 				const models = [
