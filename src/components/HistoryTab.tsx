@@ -1,19 +1,22 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../store/useChatStore';
 import { useUIStore } from '../store/useUIStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import type { Message } from '../types';
+import HistorySkeleton from './HistorySkeleton';
 
 const HistoryTab: React.FC = () => {
   const { t } = useTranslation();
   const { history, searchQuery, setSearchQuery, setMessages, setHistory } = useChatStore();
   const { setActiveTab } = useUIStore();
   const { session } = useAuthStore();
+  const [isFetching, setIsFetching] = useState<boolean>(true);
 
   const fetchChatHistory = async () => {
     if (!session?.user) return;
+    setIsFetching(true);
     try {
       const { data, error } = await supabase
         .from('chat_history')
@@ -24,6 +27,8 @@ const HistoryTab: React.FC = () => {
       if (error) console.error("History fetch error:", error);
     } catch (error) {
       console.error('Failed to fetch history:', error);
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -58,7 +63,9 @@ const HistoryTab: React.FC = () => {
       </header>
 
       <main className="flex-1 overflow-y-auto px-6 pt-4 pb-32 space-y-4 no-scrollbar">
-        {filteredHistory.length === 0 ? (
+        {isFetching ? (
+          <HistorySkeleton />
+        ) : filteredHistory.length === 0 ? (
           <div className="pt-10 text-center text-white/30 text-sm italic">
             {t('no_history')}
           </div>
