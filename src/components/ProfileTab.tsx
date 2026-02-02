@@ -77,7 +77,7 @@ const ProfileTab: React.FC = () => {
 
   return (
     <>
-      <header className="pt-14 pb-4 px-6 sticky top-0 bg-background-dark/80 backdrop-blur-md z-20">
+      <header className="py-4 px-6 z-20 shrink-0 bg-background-dark/80 backdrop-blur-md">
         <h1 className="text-2xl font-bold tracking-tight">{t('nav_profile')}</h1>
       </header>
       <main className="flex-1 p-6 space-y-8 pb-32 overflow-y-auto no-scrollbar">

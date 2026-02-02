@@ -174,38 +174,35 @@ const LoginScreen: React.FC = () => {
           </form>
         ) : (
           <>
-            <button 
-              onClick={handleKakaoLogin}
-              disabled={isLoggingIn}
-              className="flex min-w-full items-center justify-center rounded-2xl h-16 px-5 bg-kakao-yellow text-black gap-3 font-bold text-lg shadow-lg active:scale-95 transition-all duration-100 disabled:opacity-70"
-            >
-              {isLoggingIn ? (
-                <>
-                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                  <span className="truncate">{t('logging_in')}</span>
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined fill-1">chat_bubble</span>
-                  <span className="truncate">{t('login_kakao')}</span>
-                </>
-              )}
-            </button>
-
-            <div className="flex gap-3 justify-center">
-              <button 
-                onClick={() => setIsEmailMode(true)}
-                className="flex-1 flex items-center justify-center h-14 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all"
-              >
-                <span className="material-symbols-outlined text-white/60">mail</span>
-              </button>
-              <button className="flex-1 flex items-center justify-center h-14 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all">
-                <span className="material-symbols-outlined text-white/60">brand_awareness</span>
-              </button>
-            </div>
-          </>
-        )}
-
+                            <button 
+                              onClick={handleKakaoLogin}
+                              disabled={isLoggingIn}
+                              className="flex min-w-full items-center justify-center rounded-2xl h-16 px-5 bg-kakao-yellow text-black gap-3 font-bold text-lg shadow-lg active:scale-95 transition-all duration-100 disabled:opacity-70"
+                            >
+                              {isLoggingIn ? (
+                                <>
+                                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                  <span className="truncate">{t('logging_in')}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="material-symbols-outlined fill-1">chat_bubble</span>
+                                  <span className="truncate">{t('login_kakao')}</span>
+                                </>
+                              )}
+                            </button>
+            
+                            <div className="pt-2">
+                              <button 
+                                onClick={() => setIsEmailMode(true)}
+                                className="w-full flex items-center justify-center gap-2 h-14 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all text-white/60 font-medium text-sm"
+                              >
+                                <span className="material-symbols-outlined text-lg">mail</span>
+                                이메일로 계속하기
+                              </button>
+                            </div>
+                          </>
+                        )}
         <div className="text-white/30 text-xs text-center font-normal leading-normal mt-4 px-8">
           {t('terms_prefix')}
           <button 

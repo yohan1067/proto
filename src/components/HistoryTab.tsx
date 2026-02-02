@@ -43,7 +43,7 @@ const HistoryTab: React.FC = () => {
 
   return (
     <>
-      <header className="pt-14 pb-4 px-6 sticky top-0 bg-background-dark/80 backdrop-blur-md z-20">
+      <header className="py-4 px-6 z-20 shrink-0 bg-background-dark/80 backdrop-blur-md">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold tracking-tight">{t('history_title')}</h1>
           <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
