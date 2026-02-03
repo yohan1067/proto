@@ -12,6 +12,9 @@ export const useChat = () => {
     appendMessageContent
   } = useChatStore();
   
+  // Select question directly from store to use in useCallback dependencies
+  const question = useChatStore((state) => state.question);
+  
   const { setShowAuthModal, setShowToast, setActiveTab } = useUIStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -57,7 +60,7 @@ export const useChat = () => {
   };
 
   const handleAskAi = useCallback(async (customPrompt?: string) => {
-    const currentQuestion = useChatStore.getState().question || ''; // Ensure currentQuestion is always a string
+    const currentQuestion = question || ''; // Use the selected question state
     const prompt = customPrompt || currentQuestion;
     
     if (!prompt.trim()) return;
@@ -167,7 +170,7 @@ export const useChat = () => {
       setIsLoadingAi(false);
       inputRef.current?.focus();
     }
-  }, [setQuestion, setMessages, setIsLoadingAi, appendMessageContent, setShowAuthModal, setActiveTab, inputRef, setShowToast]);
+  }, [setQuestion, setMessages, setIsLoadingAi, appendMessageContent, setShowAuthModal, setActiveTab, inputRef, setShowToast, question]);
 
   return {
     messagesEndRef,
