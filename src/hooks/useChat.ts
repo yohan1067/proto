@@ -57,7 +57,7 @@ export const useChat = () => {
   };
 
   const handleAskAi = useCallback(async (customPrompt?: string) => {
-    const currentQuestion = useChatStore.getState().question;
+    const currentQuestion = useChatStore.getState().question || ''; // Ensure currentQuestion is always a string
     const prompt = customPrompt || currentQuestion;
     
     if (!prompt.trim()) return;
