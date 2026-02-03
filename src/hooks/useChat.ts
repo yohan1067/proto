@@ -139,7 +139,7 @@ export const useChat = () => {
             const content = json.choices?.[0]?.delta?.content || "";
             if (content) {
               useChatStore.getState().appendMessageContent(aiMsgId, content); // Access directly from store
-              await new Promise(resolve => setTimeout(resolve, 70)); // Increase delay for smoother streaming effect
+              await new Promise(resolve => setTimeout(resolve, 100)); // Increase delay for smoother streaming effect
             }
           } catch (e) {
             console.warn("Stream parse error for line:", trimmedLine, e);
