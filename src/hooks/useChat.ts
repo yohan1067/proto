@@ -62,9 +62,13 @@ export const useChat = () => {
     // but in event handlers usually it's fine or we pass it as arg.
     // Better to use the value from the store directly.
     const currentQuestion = useChatStore.getState().question; 
-    const prompt = customPrompt || currentQuestion; 
+    const prompt = customPrompt || currentQuestion;
+    console.log('handleAskAi called. currentQuestion:', currentQuestion, 'prompt:', prompt);
     
-    if (!prompt.trim()) return;
+    if (!prompt.trim()) {
+      console.log('Prompt is empty or just whitespace, returning.');
+      return;
+    }
 
     // 1. Add User Message
     const userMsg: Message = {
