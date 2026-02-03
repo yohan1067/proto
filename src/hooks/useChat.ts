@@ -51,22 +51,14 @@ export const useChat = () => {
       document.body.removeChild(textArea);
     };
   
-    const handleAskAi = useCallback(async (customPrompt?: string) => {
-      let prompt: string | unknown = customPrompt;
-      if (prompt === undefined) {
-        prompt = useChatStore.getState().question;
-      }
-  
-      // DEBUGGING LINE: Log the prompt and its type right before .trim()
-      console.log('DEBUG: Before trim - prompt:', prompt, 'typeof prompt:', typeof prompt);
-  
-      // Force to string and handle empty/whitespace
-      prompt = String(prompt || ''); 
-  
-      if (!prompt.trim()) {
-        console.warn('Attempted to send an empty or whitespace-only message.');
-        return;
-      }
+  const handleAskAi = useCallback(async (customPrompt?: string) => {
+    // Get the question directly from the store's current state
+    let prompt: string = String(customPrompt === undefined ? useChatStore.getState().question : customPrompt || '');
+    
+    if (!prompt.trim()) {
+      console.warn('Attempted to send an empty or whitespace-only message.');
+      return;
+    }
   
       // 1. Add User Message
       const userMsg: Message = {
