@@ -48,11 +48,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onKeyDown={onKeyDown}
           disabled={isLoadingAi}
         />
-                <button
-                  onClick={() => alert('Button Clicked!')}
-                  disabled={isLoadingAi || !question.trim()}
-                  className="w-10 h-10 mb-1 flex-shrink-0 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30"
-                >          <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
+                        <button
+          onClick={handleAskAi}
+          disabled={isLoadingAi || !question.trim()}
+          className="w-10 h-10 mb-1 flex-shrink-0 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30"
+        >          <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
         </button>
       </div>
     </div>
