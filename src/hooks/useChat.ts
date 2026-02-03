@@ -7,8 +7,8 @@ import type { Message } from '../types';
 const BACKEND_URL = 'https://proto-backend.yohan1067.workers.dev';
 
 export const useChat = () => {
-    const { setShowAuthModal, setShowToast, setActiveTab } = useUIStore();
-  
+    // Removed top-level destructuring of setters
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
   
@@ -17,8 +17,8 @@ export const useChat = () => {
     };
   
     const triggerToast = () => {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      useUIStore.getState().setShowToast(true); // Access directly from store
+      setTimeout(() => useUIStore.getState().setShowToast(false), 2000); // Access directly from store
     };
   
     const copyToClipboard = (text: string) => {
@@ -67,11 +67,11 @@ export const useChat = () => {
       sender: 'user',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    setMessages((prev) => [...prev, userMsg]);
-    setQuestion('');
-    setIsLoadingAi(true);
+    useChatStore.getState().setMessages((prev) => [...prev, userMsg]); // Access directly from store
+    useChatStore.getState().setQuestion(''); // Access directly from store
+    useChatStore.getState().setIsLoadingAi(true); // Access directly from store
     // Switch to chat tab if not already
-    setActiveTab('chat');
+    useUIStore.getState().setActiveTab('chat'); // Access directly from store
     
     // 2. Add Empty AI Message Placeholder
     const aiMsgId = Date.now() + 1;
@@ -81,7 +81,7 @@ export const useChat = () => {
       sender: 'ai',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    setMessages((prev) => [...prev, aiMsg]);
+    useChatStore.getState().setMessages((prev) => [...prev, aiMsg]); // Access directly from store
 
     inputRef.current?.focus();
 
@@ -93,8 +93,8 @@ export const useChat = () => {
       const token = currentSession?.access_token;
 
       if (!token) {
-          setShowAuthModal(true);
-          setIsLoadingAi(false);
+          useUIStore.getState().setShowAuthModal(true); // Access directly from store
+          useChatStore.getState().setIsLoadingAi(false); // Access directly from store
           return;
       }
 
@@ -140,7 +140,7 @@ export const useChat = () => {
             const json = JSON.parse(dataStr);
             const content = json.choices?.[0]?.delta?.content || "";
             if (content) {
-              appendMessageContent(aiMsgId, content);
+              useChatStore.getState().appendMessageContent(aiMsgId, content); // Access directly from store
             }
           } catch (e) {
             console.warn("Stream parse error for line:", trimmedLine, e);
@@ -158,14 +158,14 @@ export const useChat = () => {
            errorText = `[Error] ${error.message}`;
          }
        }
-       setMessages((prev) => prev.map(msg =>
+       useChatStore.getState().setMessages((prev) => prev.map(msg => // Access directly from store
          msg.id === aiMsgId ? { ...msg, text: errorText } : msg
        ));
     } finally {
-      setIsLoadingAi(false);
+      useChatStore.getState().setIsLoadingAi(false); // Access directly from store
       inputRef.current?.focus();
     }
-  }, [setQuestion, setMessages, setIsLoadingAi, appendMessageContent, setShowAuthModal, setActiveTab, inputRef, setShowToast]); // All setters included as dependencies
+  }, [inputRef]); // inputRef is stable
 
   return {
     messagesEndRef,
