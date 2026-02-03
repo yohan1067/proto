@@ -13,7 +13,7 @@ export const useChat = () => {
   } = useChatStore();
   
   // Select question directly from store to use in useCallback dependencies
-  const question = useChatStore((state) => state.question);
+  const question = String(useChatStore((state) => state.question)); // Ensure question is always a string
   
   const { setShowAuthModal, setShowToast, setActiveTab } = useUIStore();
 
@@ -60,9 +60,13 @@ export const useChat = () => {
   };
 
   const handleAskAi = useCallback(async (customPrompt?: string) => {
-    const currentQuestion = question || ''; // Use the selected question state
+    const currentQuestion = question || ''; // Use the selected question state, already ensured to be string
     const prompt = customPrompt || currentQuestion;
     
+    if (typeof prompt !== 'string') { // Type guard to prevent .trim() on non-string
+      console.error('Prompt is not a string:', prompt);
+      return;
+    }
     if (!prompt.trim()) return;
 
     // 1. Add User Message
