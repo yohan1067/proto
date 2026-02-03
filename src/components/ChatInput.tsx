@@ -41,7 +41,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ref={inputRef}
           rows={1}
           className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/40 py-2 px-2 resize-none no-scrollbar" 
-          placeholder={t('ask_placeholder')}
+          placeholder={t('ask_placeholder') + ' (Test)'}
           autoComplete="off"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
