@@ -1,4 +1,5 @@
 // Deployment check: 2026-02-03
+// Force redeploy: 2026-02-03-V2
 import { useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import ChatMessage from './components/ChatMessage';
