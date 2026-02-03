@@ -40,21 +40,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, copyToClipboard }) =>
               <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce delay-150"></div>
             </div>
           )
-        ) : (
+        )
+       : (
           msg.text
         )}
-      </div>
-      <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest flex items-center gap-2"> {/* Added flex and gap for alignment */}
-        {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
-        {msg.sender === 'ai' && msg.text && ( // Conditional render here
+        {msg.sender === 'ai' && msg.text && ( // Conditional render for AI message text
           <button
             onClick={() => copyToClipboard(msg.text)}
-            className="bg-white/10 border border-white/10 rounded-lg p-1.5 flex items-center gap-1 text-[10px] text-white/70 hover:text-white z-30" // Removed opacity-0 and absolute positioning
+            className="absolute bottom-2 right-2 bg-white/10 border border-white/10 rounded-lg p-0.5 flex items-center gap-1 text-[8px] text-white/70 hover:text-white z-30" // Subtle positioning and smaller size
           >
             <span className="material-symbols-outlined text-sm">content_copy</span>
             {t('copy')}
           </button>
         )}
+      </div>
+      <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
+        {msg.sender === 'ai' ? t('ai_name') : t('you')} • {msg.timestamp}
       </span>
     </div>
   );
