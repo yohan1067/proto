@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useCallback } from 'react';
 import { useChatStore } from '../store/useChatStore';
 import { useUIStore } from '../store/useUIStore';
 import { supabase } from '../lib/supabase';
@@ -7,9 +7,9 @@ import type { Message } from '../types';
 const BACKEND_URL = 'https://proto-backend.yohan1067.workers.dev';
 
 export const useChat = () => {
-  const { 
-    setQuestion, setMessages, setIsLoadingAi, 
-    appendMessageContent 
+  const {
+    setQuestion, setMessages, setIsLoadingAi,
+    appendMessageContent
   } = useChatStore();
   
   const { setShowAuthModal, setShowToast, setActiveTab } = useUIStore();
@@ -56,19 +56,11 @@ export const useChat = () => {
     document.body.removeChild(textArea);
   };
 
-  const handleAskAi = async (customPrompt?: string) => {
-    // We access state directly from the hook or store
-    // Re-fetching question from store state might be needed if it's stale, 
-    // but in event handlers usually it's fine or we pass it as arg.
-    // Better to use the value from the store directly.
-    const currentQuestion = useChatStore.getState().question; 
+  const handleAskAi = useCallback(async (customPrompt?: string) => {
+    const currentQuestion = useChatStore.getState().question;
     const prompt = customPrompt || currentQuestion;
-    console.log('handleAskAi called. currentQuestion:', currentQuestion, 'prompt:', prompt);
     
-    if (!prompt.trim()) {
-      console.log('Prompt is empty or just whitespace, returning.');
-      return;
-    }
+    if (!prompt.trim()) return;
 
     // 1. Add User Message
     const userMsg: Message = {
@@ -87,7 +79,7 @@ export const useChat = () => {
     const aiMsgId = Date.now() + 1;
     const aiMsg: Message = {
       id: aiMsgId,
-      text: '', 
+      text: '',
       sender: 'ai',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -110,7 +102,7 @@ export const useChat = () => {
 
       const response = await fetch(`${BACKEND_URL}/api/ai/ask`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -168,14 +160,14 @@ export const useChat = () => {
            errorText = `[Error] ${error.message}`;
          }
        }
-       setMessages((prev) => prev.map(msg => 
+       setMessages((prev) => prev.map(msg =>
          msg.id === aiMsgId ? { ...msg, text: errorText } : msg
        ));
     } finally {
       setIsLoadingAi(false);
       inputRef.current?.focus();
     }
-  };
+  }, [setQuestion, setMessages, setIsLoadingAi, appendMessageContent, setShowAuthModal, setActiveTab, inputRef, setShowToast]);
 
   return {
     messagesEndRef,
