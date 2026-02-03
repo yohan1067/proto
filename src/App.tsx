@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+// Deployment check: 2026-02-03
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
