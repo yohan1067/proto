@@ -21,42 +21,35 @@ export const useChat = () => {
       setTimeout(() => useUIStore.getState().setShowToast(false), 2000); // Access directly from store
     };
   
-      const copyToClipboard = (text: string) => {
-        console.log('DEBUG: Attempting to copy text:', text);
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(text).then(() => {
-            console.log('DEBUG: navigator.clipboard.writeText successful.');
-            triggerToast();
-          }).catch((e) => {
-            console.error('DEBUG: navigator.clipboard.writeText failed, falling back:', e);
+        const copyToClipboard = (text: string) => {
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+              triggerToast();
+            }).catch(() => {
+              fallbackCopy(text);
+            });
+          } else {
             fallbackCopy(text);
-          });
-        } else {
-          console.log('DEBUG: navigator.clipboard not available or not secure context, falling back.');
-          fallbackCopy(text);
-        }
-      };
-    
-      const fallbackCopy = (text: string) => {
-        console.log('DEBUG: Attempting fallbackCopy for text:', text);
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-9999px";
-        textArea.style.top = "0";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          console.log('DEBUG: document.execCommand("copy") successful.');
-          triggerToast();
-        } catch (e) {
-          console.error('DEBUG: document.execCommand("copy") failed:', e);
-        }
-        document.body.removeChild(textArea);
-      };  
-  const handleAskAi = useCallback(async (customPrompt?: string) => {
+          }
+        };
+      
+        const fallbackCopy = (text: string) => {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-9999px";
+          textArea.style.top = "0";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try {
+            document.execCommand('copy');
+            triggerToast();
+          } catch (e) {
+            console.error('Copy failed', e);
+          }
+          document.body.removeChild(textArea);
+        };  const handleAskAi = useCallback(async (customPrompt?: string) => {
     // Get the question directly from the store's current state
     let prompt: string = String(customPrompt === undefined ? useChatStore.getState().question : customPrompt || '');
     
