@@ -165,7 +165,7 @@ export const useChat = () => {
       setIsLoadingAi(false);
       inputRef.current?.focus();
     }
-  }, []); // Empty dependency array
+  }, [setQuestion, setMessages, setIsLoadingAi, appendMessageContent, setShowAuthModal, setActiveTab, inputRef, setShowToast]); // All setters included as dependencies
 
   return {
     messagesEndRef,
