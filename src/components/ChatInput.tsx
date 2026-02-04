@@ -1,4 +1,5 @@
 import React, { type RefObject, useEffect, useRef } from 'react';
+import imageCompression from 'browser-image-compression';
 import { useChatStore } from '../store/useChatStore';
 
 interface ChatInputProps {
@@ -36,10 +37,22 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      setSelectedImage(file);
+      try {
+        const options = {
+          maxSizeMB: 1, // Limit to 1MB
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        const compressedBlob = await imageCompression(file, options);
+        const compressedFile = new File([compressedBlob], file.name, { type: file.type });
+        setSelectedImage(compressedFile);
+      } catch (error) {
+        console.error("Image compression failed, using original:", error);
+        setSelectedImage(file);
+      }
     }
   };
 
