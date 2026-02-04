@@ -85,11 +85,11 @@ export default {
                     
                     if (!file) return jsonResponse({ error: 'No file provided' }, 400);
                     if (!file.type.startsWith('image/')) return jsonResponse({ error: 'Invalid file type' }, 400);
-                    if (file.size > 10 * 1024 * 1024) return jsonResponse({ error: 'File too large (max 10MB)' }, 400);
-
-                    const fileName = `${auth.user.id}/${crypto.randomUUID()}-${file.name}`;
-                    await env.BUCKET.put(fileName, file);
+                                    if (file.size > 10 * 1024 * 1024) return jsonResponse({ error: 'File too large (max 10MB)' }, 400);
                     
+                                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                                    const fileName = `${auth.user.id}/${crypto.randomUUID()}.${ext}`;
+                                    await env.BUCKET.put(fileName, file);                    
                     const publicUrl = `${env.R2_PUBLIC_URL}/${fileName}`;
                     return jsonResponse({ url: publicUrl });
                 } catch (e: any) {
