@@ -1,28 +1,28 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import ChatMessage from './ChatMessage';
-import { Message } from '../types';
+import type { Message } from '../types';
 
 describe('ChatMessage', () => {
   const mockCopyToClipboard = vi.fn();
   const mockT = (key: string) => key;
 
   const userMsg: Message = {
-    id: '1',
+    id: 1,
     text: 'Hello AI',
     sender: 'user',
     timestamp: '10:00 AM',
   };
 
   const aiMsg: Message = {
-    id: '2',
+    id: 2,
     text: '**Hello** from AI',
     sender: 'ai',
     timestamp: '10:01 AM',
   };
 
   const loadingAiMsg: Message = {
-    id: '3',
+    id: 3,
     text: '',
     sender: 'ai',
     timestamp: '10:02 AM',
