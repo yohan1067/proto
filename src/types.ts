@@ -3,6 +3,7 @@ export interface Message {
   text: string;
   sender: 'user' | 'ai';
   timestamp: string;
+  imageUrl?: string;
 }
 
 export interface ChatHistoryItem {

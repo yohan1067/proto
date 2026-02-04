@@ -18,50 +18,73 @@ export const useChat = () => {
     const chatStore = useChatStore.getState();
     const uiStore = useUIStore.getState();
 
-    // Get prompt
+    // Get prompt and image
     const prompt = String(customPrompt === undefined ? chatStore.question : customPrompt || '').trim();
-    if (!prompt) {
-      console.warn('Attempted to send an empty message.');
+    const selectedImage = chatStore.selectedImage;
+
+    if (!prompt && !selectedImage) {
+      console.warn('Attempted to send an empty message without image.');
       return;
     }
 
-    // 1. Setup UI & Add User Message
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    chatStore.addMessage({
-      id: Date.now(),
-      text: prompt,
-      sender: 'user',
-      timestamp
-    });
-    chatStore.setQuestion('');
     chatStore.setIsLoadingAi(true);
     uiStore.setActiveTab('chat');
     
-    // 2. Add Placeholder for AI Message
-    const aiMsgId = Date.now() + 1;
-    chatStore.addMessage({
-      id: aiMsgId,
-      text: '',
-      sender: 'ai',
-      timestamp
-    });
+    // 1. Setup Session
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
 
-    inputRef.current?.focus();
+    if (!token) {
+      uiStore.setShowAuthModal(true);
+      chatStore.setIsLoadingAi(false);
+      return;
+    }
 
-    // 3. API Request Setup
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    let imageUrl = '';
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      // 2. Upload Image if exists
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('file', selectedImage);
 
-      if (!token) {
-        uiStore.setShowAuthModal(true);
-        chatStore.setIsLoadingAi(false);
-        return;
+        const uploadRes = await fetch(`${BACKEND_URL}/api/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        if (!uploadRes.ok) throw new Error('Image upload failed');
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
       }
+
+      // 3. Add User Message to UI
+      chatStore.addMessage({
+        id: Date.now(),
+        text: prompt,
+        sender: 'user',
+        timestamp,
+        imageUrl // R2 URL
+      });
+      chatStore.setQuestion('');
+      chatStore.setSelectedImage(null);
+      
+      // 4. Add Placeholder for AI Message
+      const aiMsgId = Date.now() + 1;
+      chatStore.addMessage({
+        id: aiMsgId,
+        text: '',
+        sender: 'ai',
+        timestamp
+      });
+
+      inputRef.current?.focus();
+
+      // 5. AI API Request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
       const response = await fetch(`${BACKEND_URL}/api/ai/ask`, {
         method: 'POST',
@@ -69,7 +92,7 @@ export const useChat = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, imageUrl }),
         signal: controller.signal
       });
 
@@ -79,7 +102,7 @@ export const useChat = () => {
         throw new Error(`Server Error (${response.status})`);
       }
 
-      // 4. Stream Processing
+      // 6. Stream Processing
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -89,8 +112,6 @@ export const useChat = () => {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        
-        // Use utility to parse chunks
         const { lines, remainingBuffer } = parseStreamChunk(buffer);
         buffer = remainingBuffer;
 
@@ -103,22 +124,18 @@ export const useChat = () => {
       }
 
     } catch (error: unknown) {
-       clearTimeout(timeoutId);
        let errorText = 'Connection error occurred.';
-       
        if (error instanceof Error) {
          errorText = error.name === 'AbortError' 
            ? '[Error] 요청 시간이 초과되었습니다 (60초).' 
            : `[Error] ${error.message}`;
        }
        
-       // Update the AI message placeholder with error text
        chatStore.setMessages(prev => prev.map(msg => 
-         msg.id === aiMsgId ? { ...msg, text: errorText } : msg
+         msg.sender === 'ai' && msg.text === '' ? { ...msg, text: errorText } : msg
        ));
     } finally {
       chatStore.setIsLoadingAi(false);
-      // Re-focus input after completion
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, []);
@@ -127,7 +144,7 @@ export const useChat = () => {
     messagesEndRef,
     inputRef,
     scrollToBottom,
-    copyToClipboard, // Now imported from utils
+    copyToClipboard,
     handleAskAi
   };
 };

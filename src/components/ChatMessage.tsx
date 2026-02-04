@@ -12,6 +12,11 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, copyToClipboard }) => {
   return (
     <div className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
+      {msg.imageUrl && (
+        <div className="mb-2 max-w-[200px] sm:max-w-[300px] rounded-2xl overflow-hidden shadow-xl border border-white/10 ring-1 ring-white/5">
+          <img src={msg.imageUrl} alt="uploaded" className="w-full h-auto object-cover" />
+        </div>
+      )}
       <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full whitespace-pre-wrap`}>
         {msg.sender === 'ai' ? (
           msg.text ? (

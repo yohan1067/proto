@@ -6,3 +6,8 @@ compatibility_flags = [ "nodejs_compat" ]
 [vars]
 SUPABASE_URL = "https://mrkxepxtcsxyimlnosgm.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_HjrrnOsAmZB45Q1gtmKa5Q_mEVQVhTW"
+R2_PUBLIC_URL = "https://pub-902cdfdac49241aa9418d7eb5834feb0.r2.dev"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "proto"

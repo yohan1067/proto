@@ -8,6 +8,7 @@ interface ChatState {
   isLoadingAi: boolean;
   searchQuery: string;
   systemPrompt: string;
+  selectedImage: File | null;
   setQuestion: (question: string) => void;
   setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void;
   addMessage: (message: Message) => void;
@@ -15,6 +16,7 @@ interface ChatState {
   setIsLoadingAi: (isLoading: boolean) => void;
   setSearchQuery: (query: string) => void;
   setSystemPrompt: (prompt: string) => void;
+  setSelectedImage: (image: File | null) => void;
   resetChat: () => void;
   appendMessageContent: (id: number, content: string) => void;
 }
@@ -26,6 +28,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isLoadingAi: false,
   searchQuery: '',
   systemPrompt: '',
+  selectedImage: null,
   setQuestion: (question) => set({ question }),
   setMessages: (messages) => set((state) => ({ 
     messages: typeof messages === 'function' ? messages(state.messages) : messages 
@@ -35,12 +38,14 @@ export const useChatStore = create<ChatState>((set) => ({
   setIsLoadingAi: (isLoading) => set({ isLoadingAi: isLoading }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSystemPrompt: (prompt) => set({ systemPrompt: prompt }),
+  setSelectedImage: (image) => set({ selectedImage: image }),
   resetChat: () => set({ 
     question: '', 
     messages: [], 
     history: [], 
     isLoadingAi: false,
-    searchQuery: '' 
+    searchQuery: '',
+    selectedImage: null
   }),
   appendMessageContent: (id, content) => set((state) => ({
     messages: state.messages.map((msg) => 
