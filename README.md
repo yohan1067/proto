@@ -1,48 +1,51 @@
-# AI Assistant Pilot Service (Proto)
+# 🤖 Proto AI - 차세대 멀티모달 AI 채팅 플랫폼 (v1.0)
 
-사용자 경험을 극대화한 실시간 스트리밍 기반의 AI 채팅 파일럿 서비스입니다.  
-OpenRouter API를 통해 다양한 최신 AI 모델(Gemini, GPT 등)을 유연하게 활용하며, 관리자 전용 제어판을 제공합니다.
+2026년 최신 기술 스택으로 구축된, 강력하고 직관적인 AI 채팅 애플리케이션입니다. 단순한 텍스트 대화를 넘어 이미지 분석, 음성 인터페이스, 세션 관리 기능을 모두 갖춘 올인원 플랫폼입니다.
 
-## 🚀 핵심 기능 (Key Features)
+## 🚀 주요 기능 (Key Features)
 
-- **실시간 스트리밍 응답:** AI의 답변이 한 글자씩 타자 치듯 실시간으로 렌더링되어 최상의 응답 속도 체감을 제공합니다.
-- **다중 모델 폴백(Fallback):** 특정 AI 모델 장애 시 자동으로 차순위 모델을 시도하여 끊김 없는 서비스를 보장합니다.
-- **관리자 프롬프트 제어:** 별도의 코드 수정 없이 관리자 페이지에서 실시간으로 '시스템 프롬프트'를 변경하고 적용할 수 있습니다.
-- **다국어 지원 (i18n):** 한국어와 영어를 완벽하게 지원하며, 전역 설정에서 간편하게 전환 가능합니다.
-- **전체 대화 로그 모니터링:** 관리자는 모든 사용자의 대화 내역을 타임라인 순으로 실시간 모니터링할 수 있습니다.
-- **반응형 UI/UX:** 모바일과 데스크탑 환경에 모두 최적화된 Glassmorphism 기반의 세련된 UI를 제공합니다.
+### 1. ⚡ 실시간 스트리밍 채팅
+*   **Gemini 3 기반 엔진**: OpenRouter를 통한 최신 Google Gemini 모델 폴백 시스템 구축.
+*   **끊김 없는 스트리밍**: SSE(Server-Sent Events)를 통한 실시간 답변 생성 및 렌더링.
+*   **마크다운 지원**: 코드 하이라이팅, 테이블, 리스트 등 풍부한 텍스트 표현.
 
-## 🛠 기술 스택 (Tech Stack)
+### 2. 🖼️ 스마트 멀티모달 (Vision)
+*   **이미지 분석**: 사진을 업로드하여 AI와 시각적 대화 가능.
+*   **Cloudflare R2 연동**: 고성능 오브젝트 스토리지를 통한 안전한 이미지 관리.
+*   **자동 최적화**: 업로드 전 프론트엔드에서 1MB 이하로 지능형 이미지 압축.
+*   **드래그 앤 드롭**: PC 환경에서 직관적인 파일 업로드 경험 제공.
 
-- **Frontend:** React 19, TypeScript, Vite, Zustand (상태 관리), Tailwind CSS v4
-- **Backend:** Cloudflare Workers (Serverless)
-- **Database:** Supabase (PostgreSQL)
-- **AI:** OpenRouter API (Gemini 2.0/2.5, OpenAI 호환)
-- **Auth:** Supabase Auth (Kakao OAuth 2.0 / Email)
+### 3. 🎙️ 보이스 인터페이스
+*   **STT (Speech-to-Text)**: 마이크 입력으로 손쉽게 질문 전송.
+*   **TTS (Text-to-Speech)**: AI의 답변을 자연스러운 한국어 목소리로 청취.
 
-## 📦 설치 및 실행 (Setup)
+### 4. 📂 멀티 세션 및 히스토리
+*   **채팅방 관리**: 주제별로 무제한 채팅방 생성 및 사이드바 목록 관리.
+*   **썸네일 히스토리**: 대화 목록에서 이미지 썸네일을 함께 제공하여 직관적인 확인 가능.
+*   **자동 저장**: 대화 종료 시 백엔드에서 안전하게 데이터베이스 저장.
 
-### 로컬 개발 환경
-1. 저장소 클론: `git clone https://github.com/yohan1067/proto.git`
-2. 패키지 설치: `npm install`
-3. 환경 변수 설정: `.env` 파일에 Supabase 설정값 추가
-4. 실행: `npm run dev`
+### 5. 🛠️ 관리자 대시보드 (Admin)
+*   **독립된 페이지**: `/admin` 경로의 전용 관리자 인터페이스.
+*   **시스템 제어**: 실시간 시스템 프롬프트 수정 및 반영.
+*   **통계 및 모니터링**: 사용자 현황 및 전체 대화 로그 실시간 모니터링.
 
-### 배포 (Deployment)
-- **Frontend:** Git Push 시 Cloudflare Pages로 자동 배포 (CI/CD 구성 완료)
-- **Backend:** `wrangler deploy` 명령어를 통해 Cloudflare Workers에 배포
+## 🛠️ 기술 스택 (Tech Stack)
 
-## ⚙️ 운영 가이드 (Operations)
+*   **Frontend**: React 19, Vite, TypeScript, Tailwind CSS
+*   **State Management**: Zustand
+*   **Backend**: Cloudflare Workers (TypeScript)
+*   **Database**: Supabase (PostgreSQL)
+*   **Storage**: Cloudflare R2
+*   **AI API**: OpenRouter (Gemini 3, Gemini 2.0 Flash)
+*   **Testing**: Vitest, React Testing Library
 
-### 시스템 프롬프트 수정 방법
-1. 관리자 계정으로 로그인합니다.
-2. 하단 내비게이션의 **[관리자]** 탭을 클릭합니다.
-3. **[시스템 프롬프트]** 영역의 텍스트를 수정합니다.
-4. **[프롬프트 저장]** 버튼을 누르면 즉시 전체 서비스에 반영됩니다.
+## 🛡️ 보안 및 최적화 (Security & Optimization)
 
-### 전체 로그 확인
-- 관리자 탭 하단의 **[전체 대화 로그]** 섹션에서 서비스 전체 유저의 대화 이력을 최근순으로 확인할 수 있습니다.
+*   **CORS 보안**: 허용된 도메인(`proto-9ff.pages.dev`, `localhost`)만 API 접근 허용.
+*   **입력 검증**: 프롬프트 길이 제한(3000자) 및 파일 타입 검증.
+*   **보안 헤더**: HSTS, CSP, X-Frame-Options 등 최신 보안 표준 준수.
+*   **성능 최적화**: 백엔드 스트림 버퍼링 도입 및 프론트엔드 미사용 코드 전수 제거.
 
 ---
-**Project Status:** Stable / Active Maintenance
-**Maintainer:** [Yohan]
+**Developed with Smart Autonomy by Gemini CLI.**
+본 프로젝트는 모든 권한을 가진 AI 에이전트에 의해 자율적으로 최적화 및 구축되었습니다.
