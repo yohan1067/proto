@@ -10,11 +10,20 @@ const ProfileTab: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { session, nickname, setNickname, resetAuth, isAdmin } = useAuthStore();
-  const { showAlert } = useUIStore();
+  const { showAlert, themeColor, setThemeColor } = useUIStore();
   const { resetChat } = useChatStore();
   
   const [newNickname, setNewNickname] = useState<string>('');
   const [isUpdatingNickname, setIsUpdatingNickname] = useState<boolean>(false);
+
+  const themeColors = [
+    '#135bec', // Blue (Default)
+    '#8b5cf6', // Purple
+    '#10b981', // Green
+    '#ec4899', // Pink
+    '#f97316', // Orange
+    '#ef4444', // Red
+  ];
 
   useEffect(() => {
     setNewNickname(nickname || '');
@@ -84,11 +93,26 @@ const ProfileTab: React.FC = () => {
       </header>
       <main className="flex-1 p-6 space-y-8 pb-32 overflow-y-auto no-scrollbar">
         <section className="flex flex-col items-center py-4">
-          <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(19,91,236,0.2)]">
+          <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(var(--color-primary),0.2)]">
             <span className="material-symbols-outlined text-primary text-5xl fill-1">person</span>
           </div>
           <h2 className="text-xl font-bold text-white">{nickname}</h2>
           <p className="text-xs text-white/30 uppercase tracking-widest mt-1">{t('profile_account_type')}</p>
+        </section>
+
+        <section className="space-y-4">
+          <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em]">테마 설정</h3>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-3 flex-wrap">
+            {themeColors.map((color) => (
+              <button
+                key={color}
+                onClick={() => setThemeColor(color)}
+                className={`w-8 h-8 rounded-full border-2 transition-all ${themeColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-40 hover:opacity-100 hover:scale-105'}`}
+                style={{ backgroundColor: color }}
+                aria-label={`Select color ${color}`}
+              />
+            ))}
+          </div>
         </section>
 
         <section className="space-y-4">
