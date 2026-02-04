@@ -19,17 +19,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, copyToClipboard }) =>
         </div>
       )}
       
-      {/* TTS Button for AI */}
-      {msg.sender === 'ai' && (
-        <button 
-          onClick={() => speakText(msg.text)}
-          className="absolute -left-10 top-2 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-all active:scale-90"
-          title="Read aloud"
-        >
-          <span className="material-symbols-outlined text-[18px]">volume_up</span>
-        </button>
-      )}
-
       <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full whitespace-pre-wrap`}>
         {msg.sender === 'ai' ? (
           msg.text ? (
@@ -62,14 +51,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, copyToClipboard }) =>
        : (
           msg.text
         )}
-        {msg.sender === 'ai' && msg.text && ( // Conditional render for AI message text
-          <button
-            onClick={() => copyToClipboard(msg.text)}
-            className="absolute bottom-2 right-2 bg-white/10 border border-white/10 rounded-lg p-0.5 flex items-center gap-1 text-[8px] text-white/70 hover:text-white z-30" // Subtle positioning and smaller size
-          >
-            <span className="material-symbols-outlined text-sm">content_copy</span>
-            {t('copy')}
-          </button>
+        {msg.sender === 'ai' && msg.text && (
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => speakText(msg.text)}
+              className="bg-white/10 border border-white/10 rounded-lg p-1.5 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              title="Read aloud"
+            >
+              <span className="material-symbols-outlined text-[16px]">volume_up</span>
+            </button>
+            <button
+              onClick={() => copyToClipboard(msg.text)}
+              className="bg-white/10 border border-white/10 rounded-lg p-1.5 px-2 flex items-center gap-1 text-[10px] text-white/70 hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">content_copy</span>
+              {t('copy')}
+            </button>
+          </div>
         )}
       </div>
       <span className="text-[10px] text-white/30 mt-2 mx-1 uppercase tracking-widest">
