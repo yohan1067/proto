@@ -1,4 +1,4 @@
-import React, { type RefObject, useEffect, useRef } from 'react';
+import React, { type RefObject, useEffect, useRef, useState } from 'react';
 import imageCompression from 'browser-image-compression';
 import { useChatStore } from '../store/useChatStore';
 
@@ -21,6 +21,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const { selectedImage, setSelectedImage } = useChatStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // 내용에 따라 높이 자동 조절
   useEffect(() => {
@@ -37,8 +38,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const processFile = async (file: File) => {
     if (file && file.type.startsWith('image/')) {
       try {
         const options = {
@@ -54,6 +54,28 @@ const ChatInput: React.FC<ChatInputProps> = ({
         setSelectedImage(file);
       }
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
   };
 
   return (
@@ -78,8 +100,21 @@ const ChatInput: React.FC<ChatInputProps> = ({
       )}
 
       <div 
-        className="input-container flex items-end gap-2 p-2 pl-3 rounded-2xl w-full shadow-2xl bg-[#161b2a] border border-white/10 backdrop-blur-2xl"
+        className={`input-container relative flex items-end gap-2 p-2 pl-3 rounded-2xl w-full shadow-2xl bg-[#161b2a] border transition-all backdrop-blur-2xl ${isDragging ? 'border-primary ring-2 ring-primary/50' : 'border-white/10'}`}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
       >
+        {/* Drag Overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 rounded-2xl bg-primary/20 backdrop-blur-sm z-10 flex items-center justify-center border-2 border-dashed border-primary animate-in fade-in duration-200 pointer-events-none">
+            <div className="flex flex-col items-center text-white drop-shadow-md">
+              <span className="material-symbols-outlined text-4xl mb-1">upload_file</span>
+              <span className="text-sm font-bold tracking-wide">Drop Image Here</span>
+            </div>
+          </div>
+        )}
+
         <input 
           type="file" 
           ref={fileInputRef} 
