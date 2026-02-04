@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import type { Message, ChatHistoryItem } from '../types';
+import type { Message, ChatHistoryItem, ChatRoom } from '../types';
 
 interface ChatState {
   question: string;
   messages: Message[];
+  rooms: ChatRoom[];
+  currentRoomId: string | null;
   history: ChatHistoryItem[];
   isLoadingAi: boolean;
   searchQuery: string;
@@ -12,6 +14,8 @@ interface ChatState {
   setQuestion: (question: string) => void;
   setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void;
   addMessage: (message: Message) => void;
+  setRooms: (rooms: ChatRoom[]) => void;
+  setCurrentRoomId: (id: string | null) => void;
   setHistory: (history: ChatHistoryItem[]) => void;
   setIsLoadingAi: (isLoading: boolean) => void;
   setSearchQuery: (query: string) => void;
@@ -24,6 +28,8 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set) => ({
   question: '',
   messages: [],
+  rooms: [],
+  currentRoomId: null,
   history: [],
   isLoadingAi: false,
   searchQuery: '',
@@ -34,6 +40,8 @@ export const useChatStore = create<ChatState>((set) => ({
     messages: typeof messages === 'function' ? messages(state.messages) : messages 
   })),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+  setRooms: (rooms) => set({ rooms }),
+  setCurrentRoomId: (id) => set({ currentRoomId: id }),
   setHistory: (history) => set({ history }),
   setIsLoadingAi: (isLoading) => set({ isLoadingAi: isLoading }),
   setSearchQuery: (query) => set({ searchQuery: query }),
@@ -43,6 +51,7 @@ export const useChatStore = create<ChatState>((set) => ({
     question: '', 
     messages: [], 
     history: [], 
+    currentRoomId: null,
     isLoadingAi: false,
     searchQuery: '',
     selectedImage: null

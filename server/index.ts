@@ -21,7 +21,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 export default {
-	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	await fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
         const origin = request.headers.get('Origin') || '';
         const isAllowedOrigin = ALLOWED_ORIGINS.includes(origin);
@@ -67,69 +67,51 @@ export default {
 
 		try {
 			if (url.pathname === '/api/health') {
-				return jsonResponse({ status: 'ok', time: getKST(), version: '1.2.1' });
+				return jsonResponse({ status: 'ok', time: getKST(), version: '1.3.0' });
 			}
 
+            // Image Upload
             if (url.pathname === '/api/upload' && request.method === 'POST') {
-                try {
-                    const auth = await checkAuth();
-                    if ('error' in auth) return jsonResponse({ error: auth.error }, auth.status);
+                const auth = await checkAuth();
+                if ('error' in auth) return jsonResponse({ error: auth.error }, auth.status);
 
-                    // Check if BUCKET binding exists
-                    if (!env.BUCKET) {
-                        throw new Error("R2 Bucket binding not found. Check wrangler.toml and dashboard.");
-                    }
-
-                    const formData = await request.formData();
-                    const file = formData.get('file') as File;
-                    
-                    if (!file) return jsonResponse({ error: 'No file provided' }, 400);
-                    if (!file.type.startsWith('image/')) return jsonResponse({ error: 'Invalid file type' }, 400);
-                                    if (file.size > 10 * 1024 * 1024) return jsonResponse({ error: 'File too large (max 10MB)' }, 400);
-                    
-                                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-                                    const fileName = `${auth.user.id}/${crypto.randomUUID()}.${ext}`;
-                                    await env.BUCKET.put(fileName, file);                    
-                    const publicUrl = `${env.R2_PUBLIC_URL}/${fileName}`;
-                    return jsonResponse({ url: publicUrl });
-                } catch (e: any) {
-                    return jsonResponse({ error: `Upload Failed: ${e.message}` }, 500);
-                }
+                const formData = await request.formData();
+                const file = formData.get('file') as File;
+                if (!file) return jsonResponse({ error: 'No file provided' }, 400);
+                
+                const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                const fileName = `${auth.user.id}/${crypto.randomUUID()}.${ext}`;
+                await env.BUCKET.put(fileName, file);
+                
+                return jsonResponse({ url: `${env.R2_PUBLIC_URL}/${fileName}` });
             }
 
+			// AI Ask (Streaming + Session Management)
 			if (url.pathname === '/api/ai/ask' && request.method === 'POST') {
                 const auth = await checkAuth();
                 if ('error' in auth) return jsonResponse({ error: auth.error }, auth.status);
 
-				const body = await request.json() as { prompt?: string, imageUrl?: string };
+				const body = await request.json() as { prompt?: string, imageUrl?: string, roomId?: string };
                 const prompt = body.prompt || '';
                 const imageUrl = body.imageUrl;
+                const roomId = body.roomId; // Receive roomId
 
-                if (!prompt.trim() && !imageUrl) {
-                    return jsonResponse({ error: 'Prompt or Image is required' }, 400);
-                }
+                if (!prompt.trim() && !imageUrl) return jsonResponse({ error: 'Empty prompt' }, 400);
 
 				const { data: config } = await supabase.from('system_config').select('value').eq('key', 'system_prompt').single();
-				const baseSystemPrompt = config?.value || '너는 유능한 AI 전문가야.';
-                const systemPrompt = `${baseSystemPrompt} 반드시 한국어로만 답변해줘.`;
+				const systemPrompt = `${config?.value || '너는 유능한 AI 전문가야.'} 반드시 한국어로만 답변해줘.`;
 				
                 const userContent: any[] = [{ "type": "text", "text": prompt }];
-                if (imageUrl) {
-                    userContent.push({ "type": "image_url", "image_url": { "url": imageUrl } });
-                }
+                if (imageUrl) userContent.push({ "type": "image_url", "image_url": { "url": imageUrl } });
 
 				const models = ["google/gemini-2.0-flash-001", "google/gemini-flash-1.5", "google/gemini-pro-1.5"];
 				let aiResponse: Response | undefined;
-				let lastError = "";
 
 				for (const model of models) {
 					try {
-						const controller = new AbortController();
-						const timeout = setTimeout(() => controller.abort(), 30000); 
-						
-                        aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+						aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 							method: 'POST',
-							headers: { 
+							headers: {
 								'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
 								'Content-Type': 'application/json',
 								'HTTP-Referer': 'https://proto-9ff.pages.dev',
@@ -142,21 +124,14 @@ export default {
 									{"role": "system", "content": systemPrompt},
 									{"role": "user", "content": userContent}
 								]
-							}),
-                            signal: controller.signal
+							})
 						});
-						clearTimeout(timeout);
 						if (aiResponse.ok) break;
-                        const errText = await aiResponse.text();
-                        lastError = `Model ${model} failed: ${errText}`;
                         aiResponse = undefined; 
-					} catch (e: any) {
-						lastError = `Network error: ${e.message}`;
-						continue;
-					}
+					} catch { continue; }
 				}
 
-				if (!aiResponse || !aiResponse.body) return jsonResponse({ error: lastError || "AI 응답 실패" }, 500);
+				if (!aiResponse || !aiResponse.body) return jsonResponse({ error: "AI 응답 실패" }, 500);
 
                 const [clientStream, dbStream] = aiResponse.body.tee();
 
@@ -183,14 +158,16 @@ export default {
                             }
                         }
                         if (fullAnswer.trim()) {
-                            // Store image URL in markdown format
-                            const historyQuestion = imageUrl ? `![Image](${imageUrl}) ${prompt}` : prompt;
-                            
                             await supabase.from('chat_history').insert({
                                 user_id: auth.user.id,
-                                question: historyQuestion,
+                                room_id: roomId, // Save with roomId
+                                question: imageUrl ? `![Image](${imageUrl}) ${prompt}` : prompt,
                                 answer: fullAnswer,
                             });
+                            // Update room timestamp
+                            if (roomId) {
+                                await supabase.from('chat_rooms').update({ updated_at: new Date().toISOString() }).eq('id', roomId);
+                            }
                         }
                     } catch {}
                 })());
@@ -200,8 +177,8 @@ export default {
                 });
 			}
 			return jsonResponse({ error: 'Not Found' }, 404);
-		} catch (e: any) {
-			return jsonResponse({ error: `Internal Server Error: ${e.message}` }, 500);
+		} catch (e) {
+			return jsonResponse({ error: 'Internal Server Error' }, 500);
 		}
 	},
 };
