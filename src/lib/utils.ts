@@ -76,3 +76,16 @@ export const parseSSEData = (line: string): string | null => {
     return null;
   }
 };
+
+// TTS Helper
+export const speakText = (text: string) => {
+  if (!window.speechSynthesis) return;
+  
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text.replace(/[*#`_[\]]/g, ''));
+  utterance.lang = 'ko-KR';
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  
+  window.speechSynthesis.speak(utterance);
+};

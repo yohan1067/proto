@@ -2,6 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '../types';
+import { speakText } from '../lib/utils';
 
 interface ChatMessageProps {
   msg: Message;
@@ -11,12 +12,24 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, copyToClipboard }) => {
   return (
-    <div className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in`}>
+    <div className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} max-w-[90%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto' : ''} animate-slide-in relative group`}>
       {msg.imageUrl && (
         <div className="mb-2 max-w-[200px] sm:max-w-[300px] rounded-2xl overflow-hidden shadow-xl border border-white/10 ring-1 ring-white/5">
           <img src={msg.imageUrl} alt="uploaded" className="w-full h-auto object-cover" />
         </div>
       )}
+      
+      {/* TTS Button for AI */}
+      {msg.sender === 'ai' && (
+        <button 
+          onClick={() => speakText(msg.text)}
+          className="absolute -left-10 top-2 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+          title="Read aloud"
+        >
+          <span className="material-symbols-outlined text-[18px]">volume_up</span>
+        </button>
+      )}
+
       <div className={`${msg.sender === 'ai' ? 'glass-ai rounded-tl-none' : 'glass-user rounded-tr-none'} rounded-2xl p-4 text-[15px] leading-relaxed relative group break-words overflow-hidden w-full whitespace-pre-wrap`}>
         {msg.sender === 'ai' ? (
           msg.text ? (

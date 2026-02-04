@@ -1,6 +1,7 @@
 import React, { type RefObject, useEffect, useRef, useState } from 'react';
 import imageCompression from 'browser-image-compression';
 import { useChatStore } from '../store/useChatStore';
+import { useSpeech } from '../hooks/useSpeech';
 
 interface ChatInputProps {
   question: string;
@@ -22,8 +23,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const { selectedImage, setSelectedImage } = useChatStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  
+  const { isListening, transcript, startListening, stopListening, setTranscript } = useSpeech();
 
-  // 내용에 따라 높이 자동 조절
+  // Speech to Text Effect
+  useEffect(() => {
+    if (transcript) {
+      setQuestion(transcript);
+    }
+  }, [transcript, setQuestion]);
+
+  // Height auto-adjustment
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -35,6 +45,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleAskAi();
+      setTranscript(''); // Clear speech buffer on send
     }
   };
 
@@ -42,7 +53,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (file && file.type.startsWith('image/')) {
       try {
         const options = {
-          maxSizeMB: 1, // Limit to 1MB
+          maxSizeMB: 1, 
           maxWidthOrHeight: 1920,
           useWebWorker: true,
         };
@@ -61,21 +72,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (file) processFile(file);
   };
 
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const onDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
+  // Drag & Drop Handlers
+  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const onDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) processFile(file);
+  };
+
+  // Handle Speech Toggle
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      setTranscript(''); // Clear previous
+      setQuestion(''); // Clear input for fresh speech
+      startListening();
+    }
   };
 
   return (
@@ -105,9 +120,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         onDragLeave={onDragLeave}
         onDrop={onDrop}
       >
-        {/* Drag Overlay */}
         {isDragging && (
-          <div className="absolute inset-0 rounded-2xl bg-primary/20 backdrop-blur-sm z-10 flex items-center justify-center border-2 border-dashed border-primary animate-in fade-in duration-200 pointer-events-none">
+          <div className="absolute inset-0 rounded-2xl bg-primary/20 backdrop-blur-sm z-10 flex items-center justify-center border-2 border-dashed border-primary pointer-events-none">
             <div className="flex flex-col items-center text-white drop-shadow-md">
               <span className="material-symbols-outlined text-4xl mb-1">upload_file</span>
               <span className="text-sm font-bold tracking-wide">Drop Image Here</span>
@@ -115,13 +129,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </div>
         )}
 
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleFileChange} 
-          accept="image/*" 
-          className="hidden" 
-        />
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+        
+        {/* Image Upload Button */}
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoadingAi}
@@ -130,11 +140,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
           <span className="material-symbols-outlined text-[22px]">image</span>
         </button>
 
+        {/* Text Input */}
         <textarea 
           ref={inputRef}
           rows={1}
           className="bg-transparent border-none flex-1 min-w-0 focus:ring-0 text-sm text-white placeholder-white/40 py-2 px-1 resize-none no-scrollbar" 
-          placeholder={t('ask_placeholder')}
+          placeholder={isListening ? "듣고 있어요..." : t('ask_placeholder')}
           autoComplete="off"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
@@ -142,13 +153,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
           disabled={isLoadingAi}
         />
         
-        <button
-          onClick={() => handleAskAi()}
-          disabled={isLoadingAi || (!question.trim() && !selectedImage)}
-          className="w-10 h-10 mb-1 flex-shrink-0 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30 shadow-lg shadow-primary/20"
-        >
-          <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
-        </button>
+        {/* Mic Button (Visible when input is empty) */}
+        {!question.trim() && !selectedImage ? (
+           <button
+             onClick={toggleListening}
+             disabled={isLoadingAi}
+             className={`w-10 h-10 mb-1 flex-shrink-0 rounded-xl flex items-center justify-center active:scale-95 transition-all ${isListening ? 'bg-red-500/80 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+           >
+             <span className="material-symbols-outlined text-[22px]">{isListening ? 'mic_off' : 'mic'}</span>
+           </button>
+        ) : (
+          // Send Button (Visible when input exists)
+          <button
+            onClick={() => { handleAskAi(); setTranscript(''); }}
+            disabled={isLoadingAi}
+            className="w-10 h-10 mb-1 flex-shrink-0 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30 shadow-lg shadow-primary/20"
+          >
+            <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
+          </button>
+        )}
       </div>
     </div>
   );
