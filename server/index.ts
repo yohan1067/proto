@@ -21,7 +21,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 export default {
-	await fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
         const origin = request.headers.get('Origin') || '';
         const isAllowedOrigin = ALLOWED_ORIGINS.includes(origin);
