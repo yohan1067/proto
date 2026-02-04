@@ -3,7 +3,6 @@ import { useChatStore } from '../store/useChatStore';
 import { useUIStore } from '../store/useUIStore';
 import { supabase } from '../lib/supabase';
 import { copyToClipboard, parseStreamChunk, parseSSEData } from '../lib/utils';
-import type { Message } from '../types';
 
 const BACKEND_URL = 'https://proto-backend.yohan1067.workers.dev';
 

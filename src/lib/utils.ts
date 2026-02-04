@@ -2,6 +2,7 @@ import { useUIStore } from '../store/useUIStore';
 
 // Toast Notification Helper
 export const showToast = (message: string = 'Copied!', duration: number = 2000) => {
+  console.log('Toast:', message); // Prevent unused variable error
   useUIStore.getState().setShowToast(true);
   setTimeout(() => useUIStore.getState().setShowToast(false), duration);
 };
