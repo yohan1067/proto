@@ -14,27 +14,27 @@ const HistoryTab: React.FC = () => {
   const { session } = useAuthStore();
   const [isFetching, setIsFetching] = useState<boolean>(true);
 
-  const fetchChatHistory = async () => {
-    if (!session?.user) return;
-    setIsFetching(true);
-    try {
-      const { data, error } = await supabase
-        .from('chat_history')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (data) setHistory(data);
-      if (error) console.error("History fetch error:", error);
-    } catch (error) {
-      console.error('Failed to fetch history:', error);
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchChatHistory = async () => {
+        if (!session?.user) return;
+        setIsFetching(true);
+        try {
+          const { data, error } = await supabase
+            .from('chat_history')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (data) setHistory(data);
+          if (error) console.error("History fetch error:", error);
+        } catch (error) {
+          console.error('Failed to fetch history:', error);
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      
     fetchChatHistory();
-  }, []);
+  }, [session, setHistory]);
 
   const filteredHistory = history.filter(item => 
     item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||

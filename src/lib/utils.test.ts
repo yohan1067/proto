@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parseStreamChunk, parseSSEData, copyToClipboard } from './utils';
 import { useUIStore } from '../store/useUIStore';
 
@@ -64,7 +64,7 @@ describe('utils', () => {
       });
 
       const setShowToastMock = vi.fn();
-      // @ts-ignore
+      // @ts-expect-error - navigator.clipboard is read-only
       useUIStore.getState.mockReturnValue({ setShowToast: setShowToastMock });
 
       await copyToClipboard('test text');
@@ -76,7 +76,7 @@ describe('utils', () => {
       if (originalClipboard) {
          Object.defineProperty(navigator, 'clipboard', { value: originalClipboard, writable: true });
       } else {
-        // @ts-ignore
+        // @ts-expect-error - navigator.clipboard is read-only
          delete navigator.clipboard;
       }
     });

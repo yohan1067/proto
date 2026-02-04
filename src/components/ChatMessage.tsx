@@ -18,17 +18,17 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ msg, t, copyToClipboard }) =>
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               components={{
-                ul: ({node, ...props}) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
-                ol: ({node, ...props}) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
-                li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                strong: ({node, ...props}) => <span className="font-bold text-white" {...props} />,
-                h1: ({node, ...props}) => <h1 className="text-lg font-bold my-2" {...props} />,
-                h2: ({node, ...props}) => <h2 className="text-base font-bold my-2" {...props} />,
-                h3: ({node, ...props}) => <h3 className="text-sm font-bold my-1" {...props} />,
-                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-2 bg-white/5 rounded-r" {...props} />,
-                code: ({node, ...props}) => <code className="bg-black/30 rounded px-1 py-0.5 text-xs font-mono" {...props} />,
-                pre: ({node, ...props}) => <pre className="bg-black/30 rounded p-2 my-2 overflow-x-auto text-xs font-mono" {...props} />,
+                ul: ({...props}) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
+                ol: ({...props}) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
+                li: ({...props}) => <li className="pl-1" {...props} />,
+                p: ({...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                strong: ({...props}) => <span className="font-bold text-white" {...props} />,
+                h1: ({...props}) => <h1 className="text-lg font-bold my-2" {...props} />,
+                h2: ({...props}) => <h2 className="text-base font-bold my-2" {...props} />,
+                h3: ({...props}) => <h3 className="text-sm font-bold my-1" {...props} />,
+                blockquote: ({...props}) => <blockquote className="border-l-4 border-white/20 pl-4 py-1 my-2 bg-white/5 rounded-r" {...props} />,
+                code: ({...props}) => <code className="bg-black/30 rounded px-1 py-0.5 text-xs font-mono" {...props} />,
+                pre: ({...props}) => <pre className="bg-black/30 rounded p-2 my-2 overflow-x-auto text-xs font-mono" {...props} />,
               }}
             >
               {msg.text}

@@ -5,61 +5,77 @@ import { useUIStore } from '../store/useUIStore';
 import { supabase } from '../lib/supabase';
 import type { UserItem, ChatHistoryItem } from '../types';
 
+// Extend type to include joined user data
+interface ChatLog extends ChatHistoryItem {
+  users?: {
+    nickname: string;
+  };
+}
+
 const AdminTab: React.FC = () => {
   const { t } = useTranslation();
   const { systemPrompt, setSystemPrompt } = useChatStore();
   const { showAlert } = useUIStore();
   const [users, setUsers] = useState<UserItem[]>([]);
-  const [allLogs, setAllLogs] = useState<ChatHistoryItem[]>([]);
+  const [allLogs, setAllLogs] = useState<ChatLog[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const fetchSystemPrompt = async () => {
-    try {
-      const { data } = await supabase
-        .from('system_config')
-        .select('value')
-        .eq('key', 'system_prompt')
-        .single();
-        
-      if (data) setSystemPrompt(data.value);
-    } catch (_error) {
-      console.error('Failed to fetch system prompt:', _error);
-    }
-  };
+  useEffect(() => {
+    const fetchSystemPrompt = async () => {
+        try {
+          const { data } = await supabase
+            .from('system_config')
+            .select('value')
+            .eq('key', 'system_prompt')
+            .single();
+            
+          if (data) setSystemPrompt(data.value);
+        } catch (error: unknown) {
+          console.error('Failed to fetch system prompt:', error);
+        }
+    };
+    
+    const fetchUsers = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (data) setUsers(data);
+          if (error) console.error("Users fetch error:", error);
+        } catch (error: unknown) {
+          console.error('Failed to fetch users:', error);
+        }
+    };
+    
+    const fetchAllLogs = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('chat_history')
+            .select(`
+              *,
+              users (
+                nickname
+              )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(100);
+          
+          if (data) setAllLogs(data as unknown as ChatLog[]);
+          if (error) console.error("Logs fetch error:", error);
+        } catch (error: unknown) {
+          console.error('Failed to fetch logs:', error);
+        }
+    };
 
-  const fetchUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (data) setUsers(data);
-      if (error) console.error("Users fetch error:", error);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-    }
-  };
-
-  const fetchAllLogs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('chat_history')
-        .select(`
-          *,
-          users (
-            nickname
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (data) setAllLogs(data as any); // Cast due to joined user data
-      if (error) console.error("Logs fetch error:", error);
-    } catch (error) {
-      console.error('Failed to fetch logs:', error);
-    }
-  };
+    const init = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchSystemPrompt(), fetchUsers(), fetchAllLogs()]);
+      setIsLoading(false);
+    };
+    init();
+  }, [setSystemPrompt]);
 
   const handleSavePrompt = async () => {
     try {
@@ -72,20 +88,11 @@ const AdminTab: React.FC = () => {
       } else {
         throw error;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Save prompt error:", error);
       showAlert("Error", "Save failed", 'error');
     }
   };
-
-  useEffect(() => {
-    const init = async () => {
-      setIsLoading(true);
-      await Promise.all([fetchSystemPrompt(), fetchUsers(), fetchAllLogs()]);
-      setIsLoading(false);
-    };
-    init();
-  }, []);
 
   if (isLoading) {
     return (
@@ -153,7 +160,7 @@ const AdminTab: React.FC = () => {
               allLogs.map((log) => (
                 <div key={log.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 overflow-hidden">
                   <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                    <span className="text-[11px] font-bold text-primary">{(log as any).users?.nickname || 'Unknown'}</span>
+                    <span className="text-[11px] font-bold text-primary">{log.users?.nickname || 'Unknown'}</span>
                     <span className="text-[9px] text-white/20">{new Date(log.created_at).toLocaleString()}</span>
                   </div>
                   <div className="space-y-2">
