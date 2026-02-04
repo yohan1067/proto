@@ -136,22 +136,38 @@ export default {
                         const reader = dbStream.getReader();
                         const decoder = new TextDecoder();
                         let fullAnswer = "";
+                        let buffer = ""; // Add buffer for incomplete chunks
 
                         while (true) {
                             const { done, value } = await reader.read();
                             if (done) break;
                             
-                            const chunk = decoder.decode(value, { stream: true });
-                            const lines = chunk.split('\n');
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            // Keep the last line in buffer as it might be incomplete
+                            buffer = lines.pop() || "";
+
                             for (const line of lines) {
-                                if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                                const trimmedLine = line.trim();
+                                if (trimmedLine.startsWith('data: ') && !trimmedLine.includes('[DONE]')) {
                                     try {
-                                        const json = JSON.parse(line.slice(6));
+                                        const json = JSON.parse(trimmedLine.slice(6));
                                         const content = json.choices?.[0]?.delta?.content || "";
                                         fullAnswer += content;
-                                    } catch { /* ignore */ }
+                                    } catch (e) { 
+                                        console.error("JSON parse error:", e);
+                                    }
                                 }
                             }
+                        }
+
+                        // Process any remaining buffer if needed (usually empty or done signal)
+                        if (buffer.startsWith('data: ') && !buffer.includes('[DONE]')) {
+                             try {
+                                const json = JSON.parse(buffer.slice(6));
+                                const content = json.choices?.[0]?.delta?.content || "";
+                                fullAnswer += content;
+                            } catch { /* ignore */ }
                         }
 
                         if (fullAnswer.trim()) {
