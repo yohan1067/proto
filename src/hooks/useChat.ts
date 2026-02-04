@@ -83,6 +83,7 @@ export const useChat = () => {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let fullAnswer = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -97,10 +98,22 @@ export const useChat = () => {
         for (const line of lines) {
           const content = parseSSEData(line);
           if (content) {
+            fullAnswer += content;
             chatStore.appendMessageContent(aiMsgId, content);
-            // Optional: minimal delay for typing effect feel
-            // await new Promise(resolve => setTimeout(resolve, 10)); 
           }
+        }
+      }
+
+      // 5. Save to History
+      if (session?.user && fullAnswer.trim()) {
+        const { error: saveError } = await supabase.from('chat_history').insert({
+          user_id: session.user.id,
+          question: prompt,
+          answer: fullAnswer
+        });
+        
+        if (saveError) {
+          console.error('Failed to save chat history:', saveError);
         }
       }
 
