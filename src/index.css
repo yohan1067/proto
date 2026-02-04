@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Default Primary: #135bec (RGB: 19 91 236) */
+  /* Default Primary: #135bec (RGB: 19, 91, 236) */
   --color-primary: 19 91 236;
 }
 
@@ -33,22 +33,27 @@
     border: 1px solid rgba(var(--color-primary), 0.3);
     box-shadow: 0 0 20px rgba(var(--color-primary), 0.1);
 }
-/* ... (나머지 스타일 그대로) ... */
+
+/* Updated: Apply Primary Color to User Message */
 .glass-user {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(var(--color-primary), 0.15); /* Increased opacity for visibility */
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(var(--color-primary), 0.3);
 }
+
 .suggestion-chip {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(4px);
 }
+
+/* Updated: Apply Primary Color hint to Input Container */
 .input-container {
     background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(var(--color-primary), 0.2); /* Subtle primary border */
     backdrop-filter: blur(12px);
 }
+
 .gradient-blur {
     background: radial-gradient(circle at top right, rgba(var(--color-primary), 0.15) 0%, transparent 60%);
 }
