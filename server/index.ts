@@ -118,7 +118,7 @@ export default {
                     userContent.push({ "type": "image_url", "image_url": { "url": imageUrl } });
                 }
 
-				const models = ["google/gemini-2.0-flash-001"];
+				const models = ["google/gemini-2.0-flash-001", "google/gemini-flash-1.5", "google/gemini-pro-1.5"];
 				let aiResponse: Response | undefined;
 				let lastError = "";
 
