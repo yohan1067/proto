@@ -183,9 +183,12 @@ export default {
                             }
                         }
                         if (fullAnswer.trim()) {
+                            // Store image URL in markdown format
+                            const historyQuestion = imageUrl ? `![Image](${imageUrl}) ${prompt}` : prompt;
+                            
                             await supabase.from('chat_history').insert({
                                 user_id: auth.user.id,
-                                question: imageUrl ? `[Image] ${prompt}` : prompt,
+                                question: historyQuestion,
                                 answer: fullAnswer,
                             });
                         }

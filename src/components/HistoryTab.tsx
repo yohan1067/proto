@@ -41,6 +41,13 @@ const HistoryTab: React.FC = () => {
     item.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const parseHistoryQuestion = (rawQuestion: string) => {
+    const imgMatch = rawQuestion.match(/!\[Image\]\((.*?)\)/);
+    const imageUrl = imgMatch ? imgMatch[1] : null;
+    const text = rawQuestion.replace(/!\[Image\]\(.*?\)/, '').trim();
+    return { imageUrl, text };
+  };
+
   return (
     <>
       <header className="py-4 px-6 z-20 shrink-0 bg-background-dark/80 backdrop-blur-md">
@@ -73,28 +80,41 @@ const HistoryTab: React.FC = () => {
           <div className="pt-2">
             <p className="text-xs font-semibold text-white/30 uppercase tracking-widest mb-4">{t('today')}</p>
             <div className="space-y-3">
-              {filteredHistory.map((item) => (
-                <div 
-                  key={item.id} 
-                  onClick={() => {
-                    const loadedMessages: Message[] = [
-                      { id: 1, text: item.question, sender: 'user', timestamp: '' },
-                      { id: 2, text: item.answer, sender: 'ai', timestamp: '' }
-                    ];
-                    setMessages(loadedMessages);
-                    setActiveTab('chat');
-                  }}
-                  className="chat-card-glow group bg-card-dark border border-white/5 rounded-2xl p-4 transition-all duration-300 active:scale-[0.98] cursor-pointer"
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold text-white/90 group-hover:text-primary transition-colors line-clamp-1">{item.question}</h3>
-                    <span className="text-[10px] text-white/30 font-medium">
-                      {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+              {filteredHistory.map((item) => {
+                const { imageUrl, text } = parseHistoryQuestion(item.question);
+                
+                return (
+                  <div 
+                    key={item.id} 
+                    onClick={() => {
+                      const loadedMessages: Message[] = [
+                        { id: 1, text: text, sender: 'user', timestamp: '', imageUrl: imageUrl || undefined },
+                        { id: 2, text: item.answer, sender: 'ai', timestamp: '' }
+                      ];
+                      setMessages(loadedMessages);
+                      setActiveTab('chat');
+                    }}
+                    className="chat-card-glow group bg-card-dark border border-white/5 rounded-2xl p-4 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+                  >
+                    <div className="flex gap-4">
+                        {imageUrl && (
+                            <div className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border border-white/10 bg-black/30">
+                                <img src={imageUrl} alt="history-thumb" className="w-full h-full object-cover" />
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-1">
+                                <h3 className="font-semibold text-white/90 group-hover:text-primary transition-colors line-clamp-1">{text || (imageUrl ? 'Image uploaded' : 'No text')}</h3>
+                                <span className="text-[10px] text-white/30 font-medium whitespace-nowrap ml-2">
+                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+                            <p className="text-sm text-white/50 line-clamp-2 leading-relaxed">{item.answer}</p>
+                        </div>
+                    </div>
                   </div>
-                  <p className="text-sm text-white/50 line-clamp-2 leading-relaxed">{item.answer}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
