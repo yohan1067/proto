@@ -1,6 +1,5 @@
 // Deployment check: 2026-02-03
 // Force redeploy: 2026-02-03-V3
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginScreen from './components/LoginScreen';
@@ -20,22 +19,7 @@ function App() {
 
   // 2. Global State
   const { session, isInitialLoading } = useAuthStore();
-  const { showToast, themeColor } = useUIStore();
-
-  // Apply Theme Color
-  useEffect(() => {
-    const hexToRgb = (hex: string) => {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return `${r} ${g} ${b}`;
-    };
-    if (themeColor && /^#[0-9A-F]{6}$/i.test(themeColor)) {
-        const rgb = hexToRgb(themeColor);
-        document.documentElement.style.setProperty('--color-primary', rgb);
-        document.body.style.setProperty('--color-primary', rgb);
-    }
-  }, [themeColor]);
+  const { showToast } = useUIStore();
 
   if (isInitialLoading) {
     return (
