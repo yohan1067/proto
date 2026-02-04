@@ -67,25 +67,34 @@ export default {
 
 		try {
 			if (url.pathname === '/api/health') {
-				return jsonResponse({ status: 'ok', time: getKST(), version: '1.2.0' });
+				return jsonResponse({ status: 'ok', time: getKST(), version: '1.2.1' });
 			}
 
             if (url.pathname === '/api/upload' && request.method === 'POST') {
-                const auth = await checkAuth();
-                if ('error' in auth) return jsonResponse({ error: auth.error }, auth.status);
+                try {
+                    const auth = await checkAuth();
+                    if ('error' in auth) return jsonResponse({ error: auth.error }, auth.status);
 
-                const formData = await request.formData();
-                const file = formData.get('file') as File;
-                
-                if (!file) return jsonResponse({ error: 'No file provided' }, 400);
-                if (!file.type.startsWith('image/')) return jsonResponse({ error: 'Invalid file type' }, 400);
-                if (file.size > 10 * 1024 * 1024) return jsonResponse({ error: 'File too large (max 10MB)' }, 400);
+                    // Check if BUCKET binding exists
+                    if (!env.BUCKET) {
+                        throw new Error("R2 Bucket binding not found. Check wrangler.toml and dashboard.");
+                    }
 
-                const fileName = `${auth.user.id}/${crypto.randomUUID()}-${file.name}`;
-                await env.BUCKET.put(fileName, file);
-                
-                const publicUrl = `${env.R2_PUBLIC_URL}/${fileName}`;
-                return jsonResponse({ url: publicUrl });
+                    const formData = await request.formData();
+                    const file = formData.get('file') as File;
+                    
+                    if (!file) return jsonResponse({ error: 'No file provided' }, 400);
+                    if (!file.type.startsWith('image/')) return jsonResponse({ error: 'Invalid file type' }, 400);
+                    if (file.size > 10 * 1024 * 1024) return jsonResponse({ error: 'File too large (max 10MB)' }, 400);
+
+                    const fileName = `${auth.user.id}/${crypto.randomUUID()}-${file.name}`;
+                    await env.BUCKET.put(fileName, file);
+                    
+                    const publicUrl = `${env.R2_PUBLIC_URL}/${fileName}`;
+                    return jsonResponse({ url: publicUrl });
+                } catch (e: any) {
+                    return jsonResponse({ error: `Upload Failed: ${e.message}` }, 500);
+                }
             }
 
 			if (url.pathname === '/api/ai/ask' && request.method === 'POST') {
@@ -138,10 +147,11 @@ export default {
 						});
 						clearTimeout(timeout);
 						if (aiResponse.ok) break;
-                        lastError = `Model ${model} failed`;
+                        const errText = await aiResponse.text();
+                        lastError = `Model ${model} failed: ${errText}`;
                         aiResponse = undefined; 
-					} catch (e) {
-						lastError = "Network error";
+					} catch (e: any) {
+						lastError = `Network error: ${e.message}`;
 						continue;
 					}
 				}
@@ -187,8 +197,8 @@ export default {
                 });
 			}
 			return jsonResponse({ error: 'Not Found' }, 404);
-		} catch (e) {
-			return jsonResponse({ error: 'Internal Server Error' }, 500);
+		} catch (e: any) {
+			return jsonResponse({ error: `Internal Server Error: ${e.message}` }, 500);
 		}
 	},
 };
