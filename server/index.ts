@@ -23,6 +23,14 @@ export default {
 			'Access-Control-Max-Age': '86400',
 		};
 
+        const securityHeaders = {
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+            'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'DENY',
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+            'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none';",
+        };
+
 		if (request.method === 'OPTIONS') {
 			return new Response(null, { headers: corsHeaders });
 		}
@@ -30,7 +38,7 @@ export default {
 		const jsonResponse = (data: unknown, status = 200) => {
 			return new Response(JSON.stringify(data), {
 				status,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				headers: { ...corsHeaders, ...securityHeaders, 'Content-Type': 'application/json' }
 			});
 		};
 
@@ -185,6 +193,7 @@ export default {
 				return new Response(clientStream, {
                     headers: {
                         ...corsHeaders,
+                        ...securityHeaders,
                         'Content-Type': 'text/event-stream',
                         'Cache-Control': 'no-cache',
                         'Connection': 'keep-alive',
