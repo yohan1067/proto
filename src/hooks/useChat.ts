@@ -83,7 +83,6 @@ export const useChat = () => {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let fullAnswer = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -99,8 +98,6 @@ export const useChat = () => {
           const content = parseSSEData(line);
           if (content) {
             chatStore.appendMessageContent(aiMsgId, content);
-            // Optional: minimal delay for typing effect feel
-            // await new Promise(resolve => setTimeout(resolve, 10)); 
           }
         }
       }
