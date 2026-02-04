@@ -135,7 +135,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoadingAi}
-          className="w-10 h-10 mb-1 flex-shrink-0 rounded-xl bg-white/5 text-white/60 flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30"
+          className="w-10 h-10 flex-shrink-0 rounded-xl bg-white/5 text-white/60 flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30"
         >
           <span className="material-symbols-outlined text-[22px]">image</span>
         </button>
@@ -158,7 +158,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
            <button
              onClick={toggleListening}
              disabled={isLoadingAi}
-             className={`w-10 h-10 mb-1 flex-shrink-0 rounded-xl flex items-center justify-center active:scale-95 transition-all ${isListening ? 'bg-red-500/80 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
+             className={`w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center active:scale-95 transition-all ${isListening ? 'bg-red-500/80 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
            >
              <span className="material-symbols-outlined text-[22px]">{isListening ? 'mic_off' : 'mic'}</span>
            </button>
@@ -167,7 +167,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           <button
             onClick={() => { handleAskAi(); setTranscript(''); }}
             disabled={isLoadingAi}
-            className="w-10 h-10 mb-1 flex-shrink-0 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30 shadow-lg shadow-primary/20"
+            className="w-10 h-10 flex-shrink-0 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30 shadow-lg shadow-primary/20"
           >
             <span className="material-symbols-outlined text-white text-[20px] fill-1">send</span>
           </button>

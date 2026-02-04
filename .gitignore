@@ -26,3 +26,7 @@ dist-ssr
 /src/generated/prisma
 \n# Prisma\n.env
 .wrangler
+*.png
+*.jpg
+!src/assets/**/*.png
+!public/**/*.png
