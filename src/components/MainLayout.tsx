@@ -5,17 +5,14 @@ import ChatInput from './ChatInput';
 import ChatMessage from './ChatMessage';
 import HistoryTab from './HistoryTab';
 import ProfileTab from './ProfileTab';
-import AdminTab from './AdminTab';
 import { useUIStore } from '../store/useUIStore';
 import { useChatStore } from '../store/useChatStore';
-import { useAuthStore } from '../store/useAuthStore';
 import { useChat } from '../hooks/useChat';
 
 const MainLayout: React.FC = () => {
   const { t } = useTranslation();
   const { activeTab, setActiveTab } = useUIStore();
   const { messages, question, setQuestion, isLoadingAi } = useChatStore();
-  const { isAdmin } = useAuthStore();
   
   // Chat logic hook
   const { messagesEndRef, inputRef, scrollToBottom, copyToClipboard, handleAskAi } = useChat();
@@ -65,10 +62,8 @@ const MainLayout: React.FC = () => {
         </>
       ) : activeTab === 'history' ? (
         <HistoryTab />
-      ) : activeTab === 'profile' ? (
-        <ProfileTab />
       ) : (
-        <AdminTab />
+        <ProfileTab />
       )}
 
       <nav className="fixed bottom-0 left-0 right-0 bg-background-dark/90 backdrop-blur-xl border-t border-white/5 px-8 pb-8 pt-4 z-30 max-w-3xl mx-auto">
@@ -97,15 +92,6 @@ const MainLayout: React.FC = () => {
             <span className={`material-symbols-outlined ${activeTab === 'profile' ? 'fill-1' : 'group-hover:text-white transition-colors'}`}>person</span>
             <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_profile')}</span>
           </button>
-          {isAdmin && (
-            <button 
-              onClick={() => setActiveTab('admin')}
-              className={`flex flex-col items-center gap-1 group ${activeTab === 'admin' ? 'text-primary' : 'text-white/40'}`}
-            >
-              <span className={`material-symbols-outlined ${activeTab === 'admin' ? 'fill-1' : 'group-hover:text-white transition-colors'}`}>settings_suggest</span>
-              <span className="text-[10px] font-medium uppercase tracking-tighter">{t('nav_admin')}</span>
-            </button>
-          )}
         </div>
       </nav>
     </div>

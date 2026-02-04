@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUIStore } from '../store/useUIStore';
 import { useChatStore } from '../store/useChatStore';
@@ -7,7 +8,8 @@ import { supabase } from '../lib/supabase';
 
 const ProfileTab: React.FC = () => {
   const { t } = useTranslation();
-  const { session, nickname, setNickname, resetAuth } = useAuthStore();
+  const navigate = useNavigate();
+  const { session, nickname, setNickname, resetAuth, isAdmin } = useAuthStore();
   const { showAlert } = useUIStore();
   const { resetChat } = useChatStore();
   
@@ -91,6 +93,17 @@ const ProfileTab: React.FC = () => {
 
         <section className="space-y-4">
           <h3 className="text-xs font-bold text-primary uppercase tracking-[0.2em]">{t('profile_settings')}</h3>
+          
+          {isAdmin && (
+            <button 
+                onClick={() => navigate('/admin')}
+                className="w-full h-14 bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-white/10 text-white font-bold rounded-2xl hover:border-white/30 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+                <span className="material-symbols-outlined text-white/70">admin_panel_settings</span>
+                {t('admin_title')}
+            </button>
+          )}
+
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
             <div className="space-y-2">
               <label className="text-xs text-white/40 ml-1">{t('profile_nickname_label')}</label>

@@ -1,10 +1,12 @@
 // Deployment check: 2026-02-03
 // Force redeploy: 2026-02-03-V3
 import { useTranslation } from 'react-i18next';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginScreen from './components/LoginScreen';
 import AlertModal from './components/AlertModal';
 import AuthModal from './components/AuthModal';
 import MainLayout from './components/MainLayout';
+import AdminPage from './pages/AdminPage';
 import { useAuthStore } from './store/useAuthStore';
 import { useUIStore } from './store/useUIStore';
 import { useAuthInit } from './hooks/useAuthInit';
@@ -30,6 +32,16 @@ function App() {
     );
   }
 
+  if (!session) {
+    return (
+      <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-dark text-white font-display">
+        <AuthModal />
+        <AlertModal />
+        <LoginScreen />
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex min-h-screen w-full flex-col justify-between overflow-hidden bg-background-dark text-white font-display">
       {/* Toast Notification */}
@@ -45,7 +57,11 @@ function App() {
       <AuthModal />
       <AlertModal />
 
-      {session ? <MainLayout /> : <LoginScreen />}
+      <Routes>
+        <Route path="/" element={<MainLayout />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   );
 }
