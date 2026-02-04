@@ -31,7 +31,9 @@ function App() {
       return `${r} ${g} ${b}`;
     };
     if (themeColor && /^#[0-9A-F]{6}$/i.test(themeColor)) {
-        document.documentElement.style.setProperty('--color-primary', hexToRgb(themeColor));
+        const rgb = hexToRgb(themeColor);
+        document.documentElement.style.setProperty('--color-primary', rgb);
+        document.body.style.setProperty('--color-primary', rgb);
     }
   }, [themeColor]);
 

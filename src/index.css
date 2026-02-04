@@ -1,13 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  /* Default Primary: #135bec (RGB: 19, 91, 236) */
+  /* Default Primary: #135bec (RGB: 19 91 236) */
   --color-primary: 19 91 236;
 }
 
 @theme {
-  /* Tailwind v4 theme override */
-  --color-primary: rgb(var(--color-primary));
+  /* Remove --color-primary from here to avoid conflict with tailwind.config.js */
   --color-kakao-yellow: #FEE500;
   --color-background-light: #f6f6f8;
   --color-background-dark: #101622;
@@ -20,6 +19,7 @@
   }
 }
 
+/* ... styles using var(--color-primary) ... */
 .ai-orb-glow {
     background: radial-gradient(circle, rgba(var(--color-primary), 0.4) 0%, rgba(16, 22, 34, 0) 70%);
 }
@@ -33,6 +33,7 @@
     border: 1px solid rgba(var(--color-primary), 0.3);
     box-shadow: 0 0 20px rgba(var(--color-primary), 0.1);
 }
+/* ... (나머지 스타일 그대로) ... */
 .glass-user {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(8px);
